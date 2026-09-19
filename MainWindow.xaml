@@ -1,0 +1,641 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Window
+    x:Class="FSHE.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:FSHE"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:primitives="using:Microsoft.UI.Xaml.Controls.Primitives"
+    Title="FSHE"
+    mc:Ignorable="d">
+
+    <Grid x:Name="RootGrid" Background="{StaticResource FsheWindowBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40" />
+            <RowDefinition Height="48" />
+            <RowDefinition Height="44" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- ============ Row 0：标签页标题栏 ============ -->
+        <Grid x:Name="AppTitleBar" Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="140" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Stretch">
+                <Image
+                    Width="22"
+                    Height="22"
+                    Margin="12,0,4,0"
+                    VerticalAlignment="Center"
+                    Source="Assets\Square44x44Logo.scale-200.png" />
+                <Button
+                    Width="40"
+                    AutomationProperties.Name="菜单"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="HamburgerButton_Click"
+                    ToolTipService.ToolTip="展开/收起导航窗格">
+                    <FontIcon
+                        FontSize="15"
+                        Glyph="&#xE700;"
+                        Opacity="0.85" />
+                </Button>
+            </StackPanel>
+
+            <Grid Grid.Column="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ScrollViewer
+                    x:Name="TabsScroll"
+                    Grid.Column="0"
+                    VerticalAlignment="Stretch"
+                    HorizontalScrollBarVisibility="Hidden"
+                    HorizontalScrollMode="Enabled"
+                    VerticalScrollMode="Disabled"
+                    BringIntoViewOnFocusChange="False">
+                    <ItemsRepeater
+                        x:Name="TabsItemsControl"
+                        VerticalAlignment="Stretch">
+                        <ItemsRepeater.Layout>
+                            <StackLayout Orientation="Horizontal" Spacing="4" />
+                        </ItemsRepeater.Layout>
+                        <ItemsRepeater.ItemTemplate>
+                        <DataTemplate>
+                            <Border
+                                x:Name="TabBorder"
+                                Height="34"
+                                MinWidth="120"
+                                MaxWidth="240"
+                                Padding="16,0,4,0"
+                                Margin="2,0"
+                                Background="Transparent"
+                                CornerRadius="8,8,0,0"
+                                Loaded="TabBorder_Loaded"
+                                Tapped="TabItemTapped"
+                                RightTapped="TabBorder_RightTapped"
+                                DataContext="{Binding}">
+                                <Border.RenderTransform>
+                                    <CompositeTransform ScaleX="0.3" ScaleY="0.3" />
+                                </Border.RenderTransform>
+                                <Border.Opacity>0</Border.Opacity>
+                                <Grid Tag="{Binding}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="2" />
+                                    </Grid.RowDefinitions>
+                                    <StackPanel
+                                        Grid.Column="0"
+                                        Grid.RowSpan="2"
+                                        Orientation="Horizontal"
+                                        Spacing="8"
+                                        VerticalAlignment="Center">
+                                        <FontIcon FontSize="12" Foreground="#FFC83D" Glyph="&#xE8B7;" />
+                                        <TextBlock
+                                            MaxWidth="170"
+                                            VerticalAlignment="Center"
+                                            FontSize="13"
+                                            Text="{Binding Title}"
+                                            TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                    <Border x:Name="TabIndicator" Grid.Row="1" Height="2" Background="{StaticResource FsheAccentBrush}" CornerRadius="1,1,0,0" Visibility="Collapsed" />
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Grid.RowSpan="2"
+                                        Width="22"
+                                        Height="22"
+                                        Margin="0,6,2,0"
+                                        VerticalAlignment="Center"
+                                        HorizontalAlignment="Center"
+                                        FontFamily="Segoe UI"
+                                        FontSize="12"
+                                        Foreground="{StaticResource FsheTextSecondaryBrush}"
+                                        Text="&#x2715;"
+                                        PointerPressed="TabCloseX_PointerPressed"
+                                        PointerEntered="TabCloseX_PointerEntered"
+                                        PointerExited="TabCloseX_PointerExited"
+                                        ToolTipService.ToolTip="关闭标签页"
+                                        IsHitTestVisible="True" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+                </ScrollViewer>
+                <Button
+                    Grid.Column="1"
+                    Width="34"
+                    Height="34"
+                    Margin="4,0,0,0"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="NewTabButton_Click"
+                    ToolTipService.ToolTip="新建标签页 (Ctrl+T)">
+                    <FontIcon FontSize="13" Glyph="&#xE710;" />
+                </Button>
+            </Grid>
+
+            <Border Grid.Column="2" x:Name="CaptionSpacing" />
+        </Grid>
+
+        <!-- ============ Row 1：导航 + 面包屑 + 搜索 ============ -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Margin="8,0,0,0" Orientation="Horizontal" Spacing="2">
+                <Button x:Name="BackButton" Style="{StaticResource TitleBarButtonStyle}" Click="BackButton_Click" ToolTipService.ToolTip="后退">
+                    <FontIcon FontSize="15" Glyph="&#xE72B;" />
+                </Button>
+                <Button x:Name="ForwardButton" Style="{StaticResource TitleBarButtonStyle}" Click="ForwardButton_Click" ToolTipService.ToolTip="前进">
+                    <FontIcon FontSize="15" Glyph="&#xE72A;" />
+                </Button>
+                <Button x:Name="UpButton" Style="{StaticResource TitleBarButtonStyle}" Click="UpButton_Click" ToolTipService.ToolTip="向上">
+                    <FontIcon FontSize="15" Glyph="&#xE74A;" />
+                </Button>
+                <Button x:Name="RefreshButton" Style="{StaticResource TitleBarButtonStyle}" Click="RefreshButton_Click" ToolTipService.ToolTip="刷新 (F5)">
+                    <FontIcon FontSize="15" Glyph="&#xE72C;" />
+                </Button>
+            </StackPanel>
+
+            <!-- 面包屑药丸 -->
+            <Border
+                Grid.Column="1"
+                Margin="8,7,8,7"
+                Background="{StaticResource FsheSurfaceBrush}"
+                BorderBrush="{StaticResource FsheStrokeBrush}"
+                BorderThickness="1"
+                CornerRadius="{StaticResource FsheRadiusPill}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Button
+                        Grid.Column="0"
+                        Width="36"
+                        Height="32"
+                        Margin="2,0,0,0"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="HomeButton_Click"
+                        ToolTipService.ToolTip="主页">
+                        <FontIcon FontSize="15" Glyph="&#xE80F;" />
+                    </Button>
+                    <Rectangle
+                        Grid.Column="1"
+                        Width="1"
+                        Height="16"
+                        Fill="{StaticResource FsheStrokeBrush}" />
+                    <Border Grid.Column="2" Margin="2,0,0,0" VerticalAlignment="Center" Height="28">
+                        <Grid>
+                            <BreadcrumbBar
+                                x:Name="PathBreadcrumb"
+                                VerticalAlignment="Center"
+                                ItemClicked="PathBreadcrumb_ItemClicked"
+                                Tapped="PathBreadcrumb_Tapped"
+                                RightTapped="PathBreadcrumb_RightTapped" />
+                            <TextBox
+                                x:Name="AddressEdit"
+                                VerticalAlignment="Center"
+                                BorderThickness="0"
+                                Background="Transparent"
+                                FontSize="13"
+                                KeyDown="AddressEdit_KeyDown"
+                                LostFocus="AddressEdit_LostFocus"
+                                Visibility="Collapsed" />
+                        </Grid>
+                    </Border>
+                    <FontIcon
+                        Grid.Column="3"
+                        Margin="2,0,10,0"
+                        FontSize="9"
+                        Glyph="&#xE76C;"
+                        Opacity="0.6" />
+                </Grid>
+            </Border>
+
+            <StackPanel Grid.Column="2" Margin="0,0,10,0" Orientation="Horizontal" Spacing="8">
+                <Button x:Name="PaneToggleButton" AutomationProperties.Name="切换预览窗格" Style="{StaticResource TitleBarButtonStyle}" Click="PreviewToggle_Click" ToolTipService.ToolTip="切换预览窗格">
+                    <FontIcon FontSize="15" Glyph="&#xE792;" />
+                </Button>
+                <AutoSuggestBox
+                    x:Name="SearchBox"
+                    Width="200"
+                    VerticalAlignment="Center"
+                    CornerRadius="{StaticResource FsheRadiusPill}"
+                    PlaceholderText="搜索"
+                    QueryIcon="Find"
+                    QuerySubmitted="SearchBox_QuerySubmitted"
+                    TextChanged="SearchBox_TextChanged" />
+                <Button
+                    Width="38"
+                    Height="34"
+                    AutomationProperties.Name="切换视图"
+                    VerticalAlignment="Center"
+                    Background="{StaticResource FsheSurfaceBrush}"
+                    BorderBrush="{StaticResource FsheStrokeBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource FsheRadiusSmall}"
+                    Click="CycleViewButton_Click"
+                    ToolTipService.ToolTip="切换视图（详细信息 / 列表 / 大图标）">
+                    <FontIcon FontSize="15" Glyph="&#xE8FD;" />
+                </Button>
+                <Button
+                    Width="38"
+                    Height="34"
+                    AutomationProperties.Name="布局选项"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderBrush="{StaticResource FsheAccentBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource FsheRadiusSmall}"
+                    Foreground="{StaticResource FsheAccentBrush}"
+                    ToolTipService.ToolTip="布局选项">
+                    <FontIcon FontSize="15" Glyph="&#xE923;" />
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <RadioMenuFlyoutItem x:Name="LayoutDetails" Text="详细信息" IsChecked="True" Click="ViewOption_Click" />
+                            <RadioMenuFlyoutItem x:Name="LayoutList" Text="列表" Click="ViewOption_Click" />
+                            <RadioMenuFlyoutItem x:Name="LayoutTiles" Text="大图标" Click="ViewOption_Click" />
+                            <MenuFlyoutSeparator />
+                            <MenuFlyoutItem Text="显示隐藏的项目" Click="ToggleHiddenItem_Click">
+                                <MenuFlyoutItem.Icon><FontIcon x:Name="HiddenItemIcon" Glyph="&#xE739;" Foreground="Transparent" /></MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- ============ Row 2：命令栏（与右侧卡片对齐） ============ -->
+        <Grid x:Name="CommandBarGrid" Grid.Row="2" Margin="312,0,12,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="2">
+                <Button
+                    x:Name="NewButton"
+                    Height="34"
+                    Margin="2,0,10,0"
+                    Padding="12,0"
+                    VerticalAlignment="Center"
+                    Background="{StaticResource FsheSurfaceBrush}"
+                    BorderThickness="0"
+                    CornerRadius="{StaticResource FsheRadiusSmall}"
+                    Click="NewButton_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontSize="15" Foreground="{StaticResource FsheAccentBrush}" Glyph="&#xE710;" />
+                        <TextBlock VerticalAlignment="Center" Text="新建" />
+                        <FontIcon FontSize="8" Glyph="&#xE70D;" Opacity="0.7" />
+                    </StackPanel>
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem Text="文件夹" Click="NewFolderItem_Click">
+                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8B7;" /></MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem Text="空白文件" Click="NewFileItem_Click">
+                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8A5;" /></MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+                <Button x:Name="CutButton" AutomationProperties.Name="剪切" Style="{StaticResource ToolIconButtonStyle}" Click="CutButton_Click" ToolTipService.ToolTip="剪切 (Ctrl+X)">
+                    <FontIcon FontSize="15" Glyph="&#xE8C6;" />
+                </Button>
+                <Button x:Name="CopyButton" AutomationProperties.Name="复制" Style="{StaticResource ToolIconButtonStyle}" Click="CopyButton_Click" ToolTipService.ToolTip="复制 (Ctrl+C)">
+                    <FontIcon FontSize="15" Glyph="&#xE8C8;" />
+                </Button>
+                <Button x:Name="PasteButton" AutomationProperties.Name="粘贴" Style="{StaticResource ToolIconButtonStyle}" Click="PasteButton_Click" ToolTipService.ToolTip="粘贴 (Ctrl+V)">
+                    <FontIcon FontSize="15" Glyph="&#xE77F;" />
+                </Button>
+                <Button x:Name="RenameButton" AutomationProperties.Name="重命名" Style="{StaticResource ToolIconButtonStyle}" Click="RenameButton_Click" ToolTipService.ToolTip="重命名 (F2)">
+                    <FontIcon FontSize="15" Glyph="&#xE70F;" />
+                </Button>
+                <Button x:Name="ShareButton" AutomationProperties.Name="共享" Style="{StaticResource ToolIconButtonStyle}" Click="ShareButton_Click" ToolTipService.ToolTip="共享">
+                    <FontIcon FontSize="15" Glyph="&#xE72D;" />
+                </Button>
+                <Button x:Name="DeleteButton" AutomationProperties.Name="删除" Style="{StaticResource ToolIconButtonStyle}" Click="DeleteButton_Click" ToolTipService.ToolTip="删除 (Delete)">
+                    <FontIcon FontSize="15" Glyph="&#xE74D;" />
+                </Button>
+                <Button x:Name="PropertiesButton" AutomationProperties.Name="属性" Style="{StaticResource ToolIconButtonStyle}" Click="PropertiesButton_Click" ToolTipService.ToolTip="属性">
+                    <FontIcon FontSize="15" Glyph="&#xE90F;" />
+                </Button>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                <Button AutomationProperties.Name="排序方式" Height="34" Padding="8,0" Background="Transparent" BorderThickness="0" Click="SortButton_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock x:Name="SortLetterText" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{StaticResource FsheAccentBrush}" Text="A" />
+                        <TextBlock x:Name="SortArrowText" VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource FsheAccentBrush}" Text="&#x2193;" />
+                        <FontIcon FontSize="8" Glyph="&#xE70D;" Opacity="0.7" />
+                    </StackPanel>
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <RadioMenuFlyoutItem x:Name="SortByName" Text="名称" IsChecked="True" Click="SortOption_Click" />
+                            <RadioMenuFlyoutItem x:Name="SortByDate" Text="修改日期" Click="SortOption_Click" />
+                            <RadioMenuFlyoutItem x:Name="SortByType" Text="类型" Click="SortOption_Click" />
+                            <RadioMenuFlyoutItem x:Name="SortBySize" Text="大小" Click="SortOption_Click" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+                <Button x:Name="SortDirectionButton" AutomationProperties.Name="升序或降序" Height="34" Padding="8,0" Background="Transparent" BorderThickness="0" Click="SortDirectionButton_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <TextBlock VerticalAlignment="Center" FontSize="14" Text="&#x21C5;" />
+                        <FontIcon FontSize="8" Glyph="&#xE70D;" Opacity="0.7" />
+                    </StackPanel>
+                </Button>
+                <Button AutomationProperties.Name="视图选项" Height="34" Padding="8,0" Background="Transparent" BorderThickness="0">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <FontIcon FontSize="14" Glyph="&#xE8FD;" />
+                        <FontIcon FontSize="8" Glyph="&#xE70D;" Opacity="0.7" />
+                    </StackPanel>
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <RadioMenuFlyoutItem x:Name="ViewDetails" Text="详细信息" IsChecked="True" Click="ViewOption_Click" />
+                            <RadioMenuFlyoutItem x:Name="ViewList" Text="列表" Click="ViewOption_Click" />
+                            <RadioMenuFlyoutItem x:Name="ViewTiles" Text="大图标" Click="ViewOption_Click" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+                <Button
+                    x:Name="PreviewPaneButton"
+                    AutomationProperties.Name="预览窗格"
+                    Width="38"
+                    Height="30"
+                    Margin="6,0,0,0"
+                    Background="Transparent"
+                    BorderBrush="{StaticResource FsheAccentBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource FsheRadiusSmall}"
+                    Foreground="{StaticResource FsheAccentBrush}"
+                    Click="PreviewToggle_Click"
+                    ToolTipService.ToolTip="预览窗格">
+                    <FontIcon FontSize="14" Glyph="&#xE923;" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- ============ Row 3：侧边栏 + 内容 ============ -->
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="NavColumn" Width="312" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- 侧边栏 -->
+            <Grid x:Name="SidebarRoot" Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,4,0,8">
+                        <!-- 主页 -->
+                        <primitives:ToggleButton x:Name="HomeNav" Style="{StaticResource NavItemStyle}" IsChecked="True" Click="NavItem_Click" Tag="Home">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="24" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <FontIcon Grid.Column="0" FontSize="15" Glyph="&#xE80F;" />
+                                <TextBlock Grid.Column="1" VerticalAlignment="Center" FontWeight="SemiBold" Text="主页" />
+                            </Grid>
+                        </primitives:ToggleButton>
+
+                        <!-- 已固定 -->
+                        <primitives:ToggleButton
+                            x:Name="PinnedHeader"
+                            Margin="8,6,8,0"
+                            Padding="12,0"
+                            Height="28"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Click="SectionHeader_Click"
+                            Tag="PinnedPanel">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon x:Name="PinnedChevron" FontSize="8" Glyph="&#xE70D;" />
+                                <FontIcon FontSize="13" Foreground="#FFC83D" Glyph="&#xE734;" />
+                                <TextBlock VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource FsheTextSecondaryBrush}" Text="已固定" />
+                            </StackPanel>
+                        </primitives:ToggleButton>
+
+                        <StackPanel x:Name="PinnedPanel">
+                            <primitives:ToggleButton Style="{StaticResource NavItemStyle}" Margin="24,0,12,0" Click="NavItem_Click" Tag="Desktop">
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                    <FontIcon Grid.Column="0" FontSize="15" Foreground="#4CC2FF" Glyph="&#xE7F4;" />
+                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="桌面" /></Grid>
+                            </primitives:ToggleButton>
+                            <primitives:ToggleButton Style="{StaticResource NavItemStyle}" Margin="24,0,12,0" Click="NavItem_Click" Tag="Downloads">
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                    <FontIcon Grid.Column="0" FontSize="15" Foreground="#54D18B" Glyph="&#xE896;" />
+                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="下载" /></Grid>
+                            </primitives:ToggleButton>
+                            <primitives:ToggleButton Style="{StaticResource NavItemStyle}" Margin="24,0,12,0" Click="NavItem_Click" Tag="Documents">
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                    <FontIcon Grid.Column="0" FontSize="15" Foreground="#69B7FF" Glyph="&#xE7C3;" />
+                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="文档" /></Grid>
+                            </primitives:ToggleButton>
+                            <primitives:ToggleButton Style="{StaticResource NavItemStyle}" Margin="24,0,12,0" Click="NavItem_Click" Tag="Pictures">
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                    <FontIcon Grid.Column="0" FontSize="15" Foreground="#4FC3F7" Glyph="&#xEB9F;" />
+                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="图片" /></Grid>
+                            </primitives:ToggleButton>
+                            <primitives:ToggleButton Style="{StaticResource NavItemStyle}" Margin="24,0,12,0" Click="NavItem_Click" Tag="Music">
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                    <FontIcon Grid.Column="0" FontSize="15" Foreground="#E573B5" Glyph="&#xEC4F;" />
+                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="音乐" /></Grid>
+                            </primitives:ToggleButton>
+                            <primitives:ToggleButton Style="{StaticResource NavItemStyle}" Margin="24,0,12,0" Click="NavItem_Click" Tag="Videos">
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                    <FontIcon Grid.Column="0" FontSize="15" Foreground="#B07BE0" Glyph="&#xE714;" />
+                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="视频" /></Grid>
+                            </primitives:ToggleButton>
+                            <primitives:ToggleButton x:Name="DriveDNav" Style="{StaticResource NavItemStyle}" Margin="24,0,12,0" Click="NavItem_Click" Tag="D:\">
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                    <FontIcon Grid.Column="0" FontSize="15" Glyph="&#xE977;" />
+                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="Data (D:)" /></Grid>
+                            </primitives:ToggleButton>
+                            <primitives:ToggleButton x:Name="SoftwareNav" Style="{StaticResource NavItemStyle}" Margin="24,0,12,0" Click="NavItem_Click" Tag="D:\software">
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                    <FontIcon Grid.Column="0" FontSize="14" Foreground="#FFC83D" Glyph="&#xE8B7;" />
+                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="software" /></Grid>
+                            </primitives:ToggleButton>
+                        </StackPanel>
+
+                        <!-- 驱动器 -->
+                        <primitives:ToggleButton
+                            x:Name="DrivesHeader"
+                            Margin="8,6,8,0"
+                            Padding="12,0"
+                            Height="28"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Click="SectionHeader_Click"
+                            Tag="DrivesPanel">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon x:Name="DrivesChevron" FontSize="8" Glyph="&#xE70D;" />
+                                <FontIcon FontSize="13" Glyph="&#xE977;" />
+                                <TextBlock VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource FsheTextSecondaryBrush}" Text="驱动器" />
+                            </StackPanel>
+                        </primitives:ToggleButton>
+                        <StackPanel x:Name="DrivesPanel" />
+
+                        <!-- 网络 -->
+                        <primitives:ToggleButton
+                            x:Name="NetworkHeader"
+                            Margin="8,6,8,0"
+                            Padding="12,0"
+                            Height="28"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Click="SectionHeader_Click"
+                            Tag="NetworkPanel">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon x:Name="NetworkChevron" FontSize="8" Glyph="&#xE70D;" />
+                                <FontIcon FontSize="13" Foreground="#4CC2FF" Glyph="&#xE774;" />
+                                <TextBlock VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource FsheTextSecondaryBrush}" Text="网络" />
+                            </StackPanel>
+                        </primitives:ToggleButton>
+                        <StackPanel x:Name="NetworkPanel">
+                            <primitives:ToggleButton AutomationProperties.Name="网络位置" Style="{StaticResource NavItemStyle}" Margin="24,0,12,0" Click="NetworkItem_Click">
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                    <FontIcon Grid.Column="0" FontSize="14" Foreground="#4CC2FF" Glyph="&#xE774;" />
+                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="网络" /></Grid>
+                            </primitives:ToggleButton>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- 底部：标签 / 设置 -->
+                <StackPanel Grid.Row="1" Margin="0,0,0,6">
+                    <primitives:ToggleButton x:Name="TagsNav" AutomationProperties.Name="标签" Style="{StaticResource NavItemStyle}" Margin="8,1" Click="TagsButton_Click">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="24" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Grid.Column="0" FontSize="8" Glyph="&#xE76C;" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                <FontIcon FontSize="13" Foreground="#FFC83D" Glyph="&#xE736;" />
+                                <TextBlock VerticalAlignment="Center" Text="标签" />
+                            </StackPanel>
+                        </Grid>
+                    </primitives:ToggleButton>
+                    <primitives:ToggleButton x:Name="SettingsNav" Style="{StaticResource NavItemStyle}" Click="NavItem_Click" Tag="Settings">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="24" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Grid.Column="0" FontSize="15" Glyph="&#xE713;" />
+                            <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="设置" />
+                        </Grid>
+                    </primitives:ToggleButton>
+                </StackPanel>
+            </Grid>
+
+            <!-- 内容 Frame -->
+            <Frame x:Name="ContentFrame" Grid.Column="1" />
+
+            <!-- 悬浮状态栏 -->
+            <Grid Grid.Column="1" Height="48" VerticalAlignment="Bottom">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Border
+                    Grid.Column="0"
+                    Margin="14,0,0,8"
+                    Padding="14,7"
+                    VerticalAlignment="Bottom"
+                    HorizontalAlignment="Left"
+                    Background="{StaticResource FsheSurfaceBrush}"
+                    CornerRadius="16">
+                    <TextBlock x:Name="CountText" Style="{StaticResource CaptionTextBlockStyle}" Text="0 个项目" />
+                </Border>
+                <Button
+                    Grid.Column="1"
+                    Margin="0,0,14,8"
+                    Padding="14,7"
+                    VerticalAlignment="Bottom"
+                    Background="{StaticResource FsheSurfaceBrush}"
+                    BorderThickness="0"
+                    CornerRadius="16"
+                    Click="OpenButton_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontSize="13" Glyph="&#xE7B5;" />
+                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="打开" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!-- 预览窗格（浮于内容卡片右侧） -->
+            <Border
+                x:Name="PreviewPane"
+                Grid.Column="1"
+                Width="280"
+                Margin="0,8,12,62"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Stretch"
+                Background="{StaticResource FsheSurfaceBrush}"
+                BorderBrush="{StaticResource FsheStrokeBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Visibility="Collapsed">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="18,16" Spacing="10">
+                        <Image
+                            x:Name="PreviewIcon"
+                            HorizontalAlignment="Center"
+                            Margin="0,10,0,6"
+                            Width="72"
+                            Height="72"
+                            Source="{x:Null}" />
+                        <TextBlock
+                            x:Name="PreviewName"
+                            HorizontalAlignment="Stretch"
+                            TextAlignment="Center"
+                            TextWrapping="WrapWholeWords"
+                            Text="未选择项目" />
+                        <TextBlock
+                            x:Name="PreviewTag"
+                            HorizontalAlignment="Center"
+                            FontSize="12"
+                            Text="" />
+                        <Rectangle Height="1" Margin="0,4" Fill="{StaticResource FsheStrokeBrush}" />
+                        <TextBlock x:Name="PreviewType" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" />
+                        <TextBlock x:Name="PreviewDate" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" />
+                        <TextBlock x:Name="PreviewSize" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" />
+                        <TextBlock x:Name="PreviewPath" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.75" TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

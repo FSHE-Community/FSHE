@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "FSHE (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "FSHE (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

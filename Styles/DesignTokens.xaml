@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:primitives="using:Microsoft.UI.Xaml.Controls.Primitives">
+
+    <!-- ===== 配色（深色，参照截图） ===== -->
+    <Color x:Key="FsheWindowColor">#1F1F1F</Color>
+    <Color x:Key="FsheSurfaceColor">#2C2C2C</Color>
+    <Color x:Key="FsheStrokeColor">#3A3A3A</Color>
+    <Color x:Key="FsheHoverColor">#343434</Color>
+    <Color x:Key="FsheNavSelectedColor">#383838</Color>
+    <Color x:Key="FshePinSelectedColor">#33506B</Color>
+    <Color x:Key="FsheAccentColor">#4CC2FF</Color>
+    <Color x:Key="FsheTextColor">#F2F2F2</Color>
+    <Color x:Key="FsheTextSecondaryColor">#9B9B9B</Color>
+
+    <SolidColorBrush x:Key="FsheWindowBrush" Color="{StaticResource FsheWindowColor}" />
+    <SolidColorBrush x:Key="FsheSurfaceBrush" Color="{StaticResource FsheSurfaceColor}" />
+    <SolidColorBrush x:Key="FsheStrokeBrush" Color="{StaticResource FsheStrokeColor}" />
+    <SolidColorBrush x:Key="FsheHoverBrush" Color="{StaticResource FsheHoverColor}" />
+    <SolidColorBrush x:Key="FsheNavSelectedBrush" Color="{StaticResource FsheNavSelectedColor}" />
+    <SolidColorBrush x:Key="FshePinSelectedBrush" Color="{StaticResource FshePinSelectedColor}" />
+    <SolidColorBrush x:Key="FsheAccentBrush" Color="{StaticResource FsheAccentColor}" />
+    <SolidColorBrush x:Key="FsheTextBrush" Color="{StaticResource FsheTextColor}" />
+    <SolidColorBrush x:Key="FsheTextSecondaryBrush" Color="{StaticResource FsheTextSecondaryColor}" />
+
+    <!-- ===== 圆角 ===== -->
+    <CornerRadius x:Key="FsheRadiusSmall">6</CornerRadius>
+    <CornerRadius x:Key="FsheRadiusPill">18</CornerRadius>
+    <CornerRadius x:Key="FsheRadiusTab">8</CornerRadius>
+
+    <!-- ===== 标题栏导航按钮（透明圆形 hover） ===== -->
+    <Style x:Key="TitleBarButtonStyle" TargetType="Button">
+        <Setter Property="Width" Value="36" />
+        <Setter Property="Height" Value="36" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="{StaticResource FsheRadiusSmall}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- ===== 命令栏小图标按钮 ===== -->
+    <Style x:Key="ToolIconButtonStyle" TargetType="Button">
+        <Setter Property="Width" Value="36" />
+        <Setter Property="Height" Value="34" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="{StaticResource FsheRadiusSmall}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{StaticResource FsheTextSecondaryBrush}" />
+    </Style>
+
+    <!-- ===== 侧边栏导航项（ToggleButton，自绘 ControlTemplate + VisualState） ===== -->
+    <Style x:Key="NavItemStyle" TargetType="primitives:ToggleButton">
+        <Setter Property="Height" Value="32" />
+        <Setter Property="Margin" Value="8,1" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="{StaticResource FsheRadiusSmall}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="primitives:ToggleButton">
+                    <Border x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{StaticResource FsheHoverBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{StaticResource FsheStrokeBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Checked">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{StaticResource FshePinSelectedBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{StaticResource FshePinSelectedBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled" />
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <ContentPresenter
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ===== 标签页（ToggleButton） ===== -->
+    <Style x:Key="TabItemStyle" TargetType="primitives:ToggleButton">
+        <Setter Property="Height" Value="34" />
+        <Setter Property="MinWidth" Value="120" />
+        <Setter Property="Margin" Value="2,0" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="{StaticResource FsheRadiusTab}" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="primitives:ToggleButton">
+                    <Border x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{StaticResource FsheHoverBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{StaticResource FsheStrokeBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Checked">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{StaticResource FsheSurfaceBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{StaticResource FsheSurfaceBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled" />
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <ContentPresenter
+                            VerticalAlignment="Center"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ===== 文件列表行 ===== -->
+    <Style x:Key="FileRowStyle" TargetType="ListViewItem">
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="CornerRadius" Value="{StaticResource FsheRadiusSmall}" />
+        <Setter Property="UseSystemFocusVisuals" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListViewItem">
+                    <Border x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{StaticResource FsheHoverBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{StaticResource FsheStrokeBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <ContentPresenter />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>
