@@ -21,41 +21,16 @@
         <!-- ============ Row 0：标签页标题栏 ============ -->
         <Grid x:Name="AppTitleBar" Grid.Row="0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="140" />
             </Grid.ColumnDefinitions>
 
-            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Stretch">
-                <Image
-                    Width="22"
-                    Height="22"
-                    Margin="12,0,4,0"
-                    VerticalAlignment="Center"
-                    Source="Assets\Square44x44Logo.scale-200.png" />
-                <Button
-                    Width="40"
-                    AutomationProperties.Name="菜单"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Click="HamburgerButton_Click"
-                    ToolTipService.ToolTip="展开/收起导航窗格">
-                    <FontIcon
-                        FontSize="15"
-                        Glyph="&#xE700;"
-                        Opacity="0.85" />
-                </Button>
-            </StackPanel>
-
-            <Grid Grid.Column="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <ScrollViewer
-                    x:Name="TabsScroll"
-                    Grid.Column="0"
-                    VerticalAlignment="Stretch"
+            <ScrollViewer
+                x:Name="TabsScroll"
+                Grid.Column="0"
+                Margin="8,0,0,0"
+                VerticalAlignment="Stretch"
                     HorizontalScrollBarVisibility="Hidden"
                     HorizontalScrollMode="Enabled"
                     VerticalScrollMode="Disabled"
@@ -144,7 +119,6 @@
                     ToolTipService.ToolTip="新建标签页 (Ctrl+T)">
                     <FontIcon FontSize="13" Glyph="&#xE710;" />
                 </Button>
-            </Grid>
 
             <Border Grid.Column="2" x:Name="CaptionSpacing" />
         </Grid>
@@ -231,61 +205,45 @@
                 </Grid>
             </Border>
 
-            <StackPanel Grid.Column="2" Margin="0,0,10,0" Orientation="Horizontal" Spacing="8">
-                <Button x:Name="PaneToggleButton" AutomationProperties.Name="切换预览窗格" Style="{StaticResource TitleBarButtonStyle}" Click="PreviewToggle_Click" ToolTipService.ToolTip="切换预览窗格">
-                    <FontIcon FontSize="15" Glyph="&#xE792;" />
-                </Button>
+            <StackPanel Grid.Column="2" Margin="0,0,12,0" Orientation="Horizontal" Spacing="8">
                 <AutoSuggestBox
                     x:Name="SearchBox"
-                    Width="200"
+                    Width="220"
                     VerticalAlignment="Center"
                     CornerRadius="{StaticResource FsheRadiusPill}"
                     PlaceholderText="搜索"
                     QueryIcon="Find"
+                    Visibility="Collapsed"
                     QuerySubmitted="SearchBox_QuerySubmitted"
-                    TextChanged="SearchBox_TextChanged" />
+                    TextChanged="SearchBox_TextChanged"
+                    LostFocus="SearchBox_LostFocus" />
                 <Button
-                    Width="38"
+                    x:Name="SearchToggleButton"
+                    Width="36"
                     Height="34"
-                    AutomationProperties.Name="切换视图"
-                    VerticalAlignment="Center"
-                    Background="{StaticResource FsheSurfaceBrush}"
-                    BorderBrush="{StaticResource FsheStrokeBrush}"
-                    BorderThickness="1"
-                    CornerRadius="{StaticResource FsheRadiusSmall}"
-                    Click="CycleViewButton_Click"
-                    ToolTipService.ToolTip="切换视图（详细信息 / 列表 / 大图标）">
-                    <FontIcon FontSize="15" Glyph="&#xE8FD;" />
-                </Button>
-                <Button
-                    Width="38"
-                    Height="34"
-                    AutomationProperties.Name="布局选项"
+                    AutomationProperties.Name="搜索"
                     VerticalAlignment="Center"
                     Background="Transparent"
-                    BorderBrush="{StaticResource FsheAccentBrush}"
-                    BorderThickness="1"
-                    CornerRadius="{StaticResource FsheRadiusSmall}"
-                    Foreground="{StaticResource FsheAccentBrush}"
-                    ToolTipService.ToolTip="布局选项">
-                    <FontIcon FontSize="15" Glyph="&#xE923;" />
-                    <Button.Flyout>
-                        <MenuFlyout>
-                            <RadioMenuFlyoutItem x:Name="LayoutDetails" Text="详细信息" IsChecked="True" Click="ViewOption_Click" />
-                            <RadioMenuFlyoutItem x:Name="LayoutList" Text="列表" Click="ViewOption_Click" />
-                            <RadioMenuFlyoutItem x:Name="LayoutTiles" Text="大图标" Click="ViewOption_Click" />
-                            <MenuFlyoutSeparator />
-                            <MenuFlyoutItem Text="显示隐藏的项目" Click="ToggleHiddenItem_Click">
-                                <MenuFlyoutItem.Icon><FontIcon x:Name="HiddenItemIcon" Glyph="&#xE739;" Foreground="Transparent" /></MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                        </MenuFlyout>
-                    </Button.Flyout>
+                    BorderThickness="0"
+                    Click="SearchToggle_Click"
+                    ToolTipService.ToolTip="搜索 (Ctrl+F)">
+                    <FontIcon FontSize="15" Glyph="&#xE721;" />
                 </Button>
+                <Border
+                    Width="22"
+                    Height="22"
+                    Margin="2,0,0,0"
+                    VerticalAlignment="Center"
+                    CornerRadius="11"
+                    Background="#3DBA4E"
+                    ToolTipService.ToolTip="一切就绪">
+                    <FontIcon FontSize="10" Foreground="White" Glyph="&#xE73E;" />
+                </Border>
             </StackPanel>
         </Grid>
 
         <!-- ============ Row 2：命令栏（与右侧卡片对齐） ============ -->
-        <Grid x:Name="CommandBarGrid" Grid.Row="2" Margin="312,0,12,0">
+        <Grid x:Name="CommandBarGrid" Grid.Row="2" Margin="241,0,12,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -330,18 +288,36 @@
                 <Button x:Name="RenameButton" AutomationProperties.Name="重命名" Style="{StaticResource ToolIconButtonStyle}" Click="RenameButton_Click" ToolTipService.ToolTip="重命名 (F2)">
                     <FontIcon FontSize="15" Glyph="&#xE70F;" />
                 </Button>
-                <Button x:Name="ShareButton" AutomationProperties.Name="共享" Style="{StaticResource ToolIconButtonStyle}" Click="ShareButton_Click" ToolTipService.ToolTip="共享">
-                    <FontIcon FontSize="15" Glyph="&#xE72D;" />
-                </Button>
                 <Button x:Name="DeleteButton" AutomationProperties.Name="删除" Style="{StaticResource ToolIconButtonStyle}" Click="DeleteButton_Click" ToolTipService.ToolTip="删除 (Delete)">
                     <FontIcon FontSize="15" Glyph="&#xE74D;" />
                 </Button>
-                <Button x:Name="PropertiesButton" AutomationProperties.Name="属性" Style="{StaticResource ToolIconButtonStyle}" Click="PropertiesButton_Click" ToolTipService.ToolTip="属性">
-                    <FontIcon FontSize="15" Glyph="&#xE90F;" />
+                <Button
+                    x:Name="TagButton"
+                    AutomationProperties.Name="设置标签"
+                    Style="{StaticResource ToolIconButtonStyle}"
+                    Click="TagButton_Click"
+                    ToolTipService.ToolTip="给选中项设置标签">
+                    <FontIcon FontSize="12" Glyph="&#x25C6;" />
                 </Button>
             </StackPanel>
 
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                <Button
+                    AutomationProperties.Name="视图设置"
+                    Height="34"
+                    Padding="8,0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    ToolTipService.ToolTip="视图设置">
+                    <FontIcon FontSize="14" Glyph="&#xE713;" />
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem Text="显示隐藏的项目" Click="ToggleHiddenItem_Click">
+                                <MenuFlyoutItem.Icon><FontIcon x:Name="HiddenItemIcon" Glyph="&#xE739;" Foreground="Transparent" /></MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
                 <Button AutomationProperties.Name="排序方式" Height="34" Padding="8,0" Background="Transparent" BorderThickness="0" Click="SortButton_Click">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <TextBlock x:Name="SortLetterText" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{StaticResource FsheAccentBrush}" Text="A" />
@@ -383,10 +359,7 @@
                     Height="30"
                     Margin="6,0,0,0"
                     Background="Transparent"
-                    BorderBrush="{StaticResource FsheAccentBrush}"
-                    BorderThickness="1"
-                    CornerRadius="{StaticResource FsheRadiusSmall}"
-                    Foreground="{StaticResource FsheAccentBrush}"
+                    BorderThickness="0"
                     Click="PreviewToggle_Click"
                     ToolTipService.ToolTip="预览窗格">
                     <FontIcon FontSize="14" Glyph="&#xE923;" />
@@ -397,9 +370,17 @@
         <!-- ============ Row 3：侧边栏 + 内容 ============ -->
         <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition x:Name="NavColumn" Width="312" />
+                <ColumnDefinition x:Name="NavColumn" Width="240" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
+
+            <Rectangle
+                Grid.Column="1"
+                Width="1"
+                Margin="0,8"
+                Fill="{StaticResource FsheStrokeBrush}"
+                Opacity="0.6" />
 
             <!-- 侧边栏 -->
             <Grid x:Name="SidebarRoot" Grid.Column="0">
@@ -472,15 +453,15 @@
                                     <FontIcon Grid.Column="0" FontSize="15" Foreground="#B07BE0" Glyph="&#xE714;" />
                                     <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="视频" /></Grid>
                             </primitives:ToggleButton>
-                            <primitives:ToggleButton x:Name="DriveDNav" Style="{StaticResource NavItemStyle}" Margin="24,0,12,0" Click="NavItem_Click" Tag="D:\">
+                            <primitives:ToggleButton x:Name="ProfileNav" Style="{StaticResource NavItemStyle}" Margin="24,0,12,0" Click="NavItem_Click" Tag="::PROFILE">
                                 <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                    <FontIcon Grid.Column="0" FontSize="15" Glyph="&#xE977;" />
-                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="Data (D:)" /></Grid>
+                                    <FontIcon Grid.Column="0" FontSize="15" Foreground="#69B7FF" Glyph="&#xE77B;" />
+                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="YU.GU" /></Grid>
                             </primitives:ToggleButton>
-                            <primitives:ToggleButton x:Name="SoftwareNav" Style="{StaticResource NavItemStyle}" Margin="24,0,12,0" Click="NavItem_Click" Tag="D:\software">
+                            <primitives:ToggleButton x:Name="RecycleBinNav" Style="{StaticResource NavItemStyle}" Margin="24,0,12,0" Click="NavItem_Click" Tag="::RECYCLE">
                                 <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                    <FontIcon Grid.Column="0" FontSize="14" Foreground="#FFC83D" Glyph="&#xE8B7;" />
-                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="software" /></Grid>
+                                    <FontIcon Grid.Column="0" FontSize="15" Foreground="#9B9B9B" Glyph="&#xE74D;" />
+                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="回收站" /></Grid>
                             </primitives:ToggleButton>
                         </StackPanel>
 
@@ -529,24 +510,31 @@
                                     <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="网络" /></Grid>
                             </primitives:ToggleButton>
                         </StackPanel>
+
+                        <!-- 标签 -->
+                        <primitives:ToggleButton
+                            x:Name="TagsHeader"
+                            Margin="8,6,8,0"
+                            Padding="12,0"
+                            Height="28"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Click="SectionHeader_Click"
+                            Tag="TagsPanel">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon x:Name="TagsChevron" FontSize="8" Glyph="&#xE70D;" />
+                                <FontIcon FontSize="13" Foreground="#FFC83D" Glyph="&#xE736;" />
+                                <TextBlock VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource FsheTextSecondaryBrush}" Text="标签" />
+                            </StackPanel>
+                        </primitives:ToggleButton>
+                        <StackPanel x:Name="TagsPanel" />
                     </StackPanel>
                 </ScrollViewer>
 
-                <!-- 底部：标签 / 设置 -->
+                <!-- 底部：设置 -->
                 <StackPanel Grid.Row="1" Margin="0,0,0,6">
-                    <primitives:ToggleButton x:Name="TagsNav" AutomationProperties.Name="标签" Style="{StaticResource NavItemStyle}" Margin="8,1" Click="TagsButton_Click">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="24" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <FontIcon Grid.Column="0" FontSize="8" Glyph="&#xE76C;" />
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                                <FontIcon FontSize="13" Foreground="#FFC83D" Glyph="&#xE736;" />
-                                <TextBlock VerticalAlignment="Center" Text="标签" />
-                            </StackPanel>
-                        </Grid>
-                    </primitives:ToggleButton>
                     <primitives:ToggleButton x:Name="SettingsNav" Style="{StaticResource NavItemStyle}" Click="NavItem_Click" Tag="Settings">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -561,46 +549,28 @@
             </Grid>
 
             <!-- 内容 Frame -->
-            <Frame x:Name="ContentFrame" Grid.Column="1" />
+            <Frame x:Name="ContentFrame" Grid.Column="2" />
 
-            <!-- 悬浮状态栏 -->
-            <Grid Grid.Column="1" Height="48" VerticalAlignment="Bottom">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <Border
-                    Grid.Column="0"
-                    Margin="14,0,0,8"
-                    Padding="14,7"
-                    VerticalAlignment="Bottom"
-                    HorizontalAlignment="Left"
-                    Background="{StaticResource FsheSurfaceBrush}"
-                    CornerRadius="16">
+            <!-- 底部状态栏 -->
+            <Border
+                Grid.Column="2"
+                Height="34"
+                VerticalAlignment="Bottom"
+                BorderBrush="{StaticResource FsheStrokeBrush}"
+                BorderThickness="0,1,0,0"
+                Background="Transparent">
+                <StackPanel Margin="16,0,0,0" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
                     <TextBlock x:Name="CountText" Style="{StaticResource CaptionTextBlockStyle}" Text="0 个项目" />
-                </Border>
-                <Button
-                    Grid.Column="1"
-                    Margin="0,0,14,8"
-                    Padding="14,7"
-                    VerticalAlignment="Bottom"
-                    Background="{StaticResource FsheSurfaceBrush}"
-                    BorderThickness="0"
-                    CornerRadius="16"
-                    Click="OpenButton_Click">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon FontSize="13" Glyph="&#xE7B5;" />
-                        <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="打开" />
-                    </StackPanel>
-                </Button>
-            </Grid>
+                    <TextBlock x:Name="TotalSizeText" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" Text="" />
+                </StackPanel>
+            </Border>
 
             <!-- 预览窗格（浮于内容卡片右侧） -->
             <Border
                 x:Name="PreviewPane"
-                Grid.Column="1"
+                Grid.Column="2"
                 Width="280"
-                Margin="0,8,12,62"
+                Margin="0,8,12,42"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Stretch"
                 Background="{StaticResource FsheSurfaceBrush}"

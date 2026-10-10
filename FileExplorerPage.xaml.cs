@@ -33,6 +33,20 @@ public sealed partial class FileExplorerPage : Page
     /// <summary>当前目录的项目总数（供宿主在订阅事件前主动读取）。</summary>
     public int CurrentCount => _allItems.Count;
 
+    /// <summary>当前目录所有文件的总大小（文件夹不计入），供底部状态栏显示。</summary>
+    public string TotalSizeDisplay
+    {
+        get
+        {
+            long total = 0;
+            foreach (var item in _allItems)
+            {
+                if (!item.IsDirectory) total += FileSize(item.FullPath);
+            }
+            return total > 0 ? FileSystemItem.FormatBytes(total) : string.Empty;
+        }
+    }
+
     /// <summary>当前视图的中文名称（与菜单文本一致）。</summary>
     public string CurrentViewName => _mode switch
     {
@@ -50,6 +64,8 @@ public sealed partial class FileExplorerPage : Page
     private bool _sortAscending = true;
     private ViewMode _mode = ViewMode.Details;
     private readonly HashSet<string> _folderSizeRequested = new();
+    private string _searchQuery = string.Empty;
+    private string? _tagFilter;
 
     private enum ViewMode { Details, List, Tiles }
 
@@ -135,6 +151,8 @@ public sealed partial class FileExplorerPage : Page
         Items.Clear();
         _allItems.Clear();
         _folderSizeRequested.Clear();
+        _searchQuery = string.Empty;
+        _tagFilter = null;
 
         // 虚拟路径：::NETWORK → 渲染已连接网络 + 映射盘 + 本地盘符
         if (path == "::NETWORK") { LoadNetworkView(); return; }
@@ -195,12 +213,28 @@ public sealed partial class FileExplorerPage : Page
 
     public void ApplySearch(string query)
     {
+        _searchQuery = query ?? string.Empty;
+        ReapplyFilter();
+    }
+
+    /// <summary>按标签过滤当前列表（null/空 = 显示全部）；与搜索条件叠加。</summary>
+    public void ApplyTagFilter(string? tag)
+    {
+        _tagFilter = string.IsNullOrWhiteSpace(tag) ? null : tag;
+        ReapplyFilter();
+    }
+
+    private void ReapplyFilter()
+    {
         Items.Clear();
-        var filtered = string.IsNullOrWhiteSpace(query)
-            ? _allItems
-            : _allItems.Where(i => i.Name.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
-        foreach (var item in filtered) Items.Add(item);
-        UpdateEmptyState(query);
+        foreach (var item in _allItems)
+        {
+            if (_tagFilter != null && item.FileTag != _tagFilter) continue;
+            if (!string.IsNullOrWhiteSpace(_searchQuery) &&
+                !item.Name.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase)) continue;
+            Items.Add(item);
+        }
+        UpdateEmptyState(_searchQuery);
     }
 
     private void UpdateEmptyState(string query)
@@ -216,8 +250,7 @@ public sealed partial class FileExplorerPage : Page
         _sortKey = key;
         _sortAscending = ascending;
         ApplySort();
-        Items.Clear();
-        foreach (var item in _allItems) Items.Add(item);
+        ReapplyFilter();
         UpdateSortHeaders();
         SortChanged?.Invoke(this, (key, ascending));
     }

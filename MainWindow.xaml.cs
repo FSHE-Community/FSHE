@@ -11,7 +11,6 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Windows.System;
-using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation;
 using Windows.UI;
 using WinRT;
@@ -34,7 +33,6 @@ public sealed partial class MainWindow : Window
     private readonly List<ToggleButton> _navButtons = new();
     private string _sortKey = "Name";
     private bool _sortAscending = true;
-    private bool _navCollapsed;
     private bool _previewOpen;
     private int _previewSizeToken;
 
@@ -54,7 +52,7 @@ public sealed partial class MainWindow : Window
 
         RegisterNavButtons();
         BuildDrivesSection();
-        HideMissingPins();
+        BuildTagsSection();
         InitSectionChevrons();
 
         // 启动时两个标签页：用户主目录 + 桌面
@@ -198,6 +196,19 @@ public sealed partial class MainWindow : Window
         };
         kAddr2.Invoked += (_, __) => FocusAddressBar();
         host.Add(kAddr2);
+
+        // Ctrl+F → 展开并聚焦搜索框
+        var kSearch = new Microsoft.UI.Xaml.Input.KeyboardAccelerator
+        {
+            Key = VirtualKey.F,
+            Modifiers = VirtualKeyModifiers.Control
+        };
+        kSearch.Invoked += (_, __) =>
+        {
+            SearchBox.Visibility = Visibility.Visible;
+            SearchBox.Focus(FocusState.Programmatic);
+        };
+        host.Add(kSearch);
     }
 
     private void CloseActiveTab()
@@ -530,7 +541,7 @@ public sealed partial class MainWindow : Window
         _navButtons.Clear();
         _navButtons.Add(HomeNav);
         _navButtons.Add(SettingsNav);
-        foreach (var panel in new[] { PinnedPanel, DrivesPanel, NetworkPanel })
+        foreach (var panel in new[] { PinnedPanel, DrivesPanel, NetworkPanel, TagsPanel })
         {
             foreach (var child in panel.Children.OfType<ToggleButton>())
                 _navButtons.Add(child);
@@ -556,7 +567,7 @@ public sealed partial class MainWindow : Window
                 Style = (Style)Application.Current.Resources["NavItemStyle"],
                 Margin = new Thickness(24, 0, 12, 0),
                 Tag = drive.Name,
-                Content = BuildNavContent("\uE977", label, null),
+                Content = BuildDriveNavContent(label),
             };
             btn.Click += NavItem_Click;
             DrivesPanel.Children.Add(btn);
@@ -564,40 +575,105 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void HideMissingPins()
+    private static object BuildDriveNavContent(string label)
     {
-        DriveDNav.Visibility = Directory.Exists(@"D:\") ? Visibility.Visible : Visibility.Collapsed;
-        SoftwareNav.Visibility = Directory.Exists(@"D:\software") ? Visibility.Visible : Visibility.Collapsed;
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(14) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(24) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        var chevron = new FontIcon { Glyph = "\uE76C", FontSize = 8, Opacity = 0.7, VerticalAlignment = VerticalAlignment.Center };
+        Grid.SetColumn(chevron, 0);
+
+        var icon = new FontIcon { Glyph = "\uE977", FontSize = 15, VerticalAlignment = VerticalAlignment.Center };
+        Grid.SetColumn(icon, 1);
+
+        var labelBlock = new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center };
+        Grid.SetColumn(labelBlock, 2);
+
+        grid.Children.Add(chevron);
+        grid.Children.Add(icon);
+        grid.Children.Add(labelBlock);
+        return grid;
     }
 
-    private static object BuildNavContent(string glyph, string text, string? colorHex)
+    // ================== 侧边栏标签分区 ==================
+
+    private readonly List<ToggleButton> _tagNavButtons = new();
+
+    private void BuildTagsSection()
+    {
+        _tagNavButtons.Clear();
+        TagsPanel.Children.Clear();
+        foreach (var (name, color) in TagStore.AllTags())
+        {
+            var btn = new ToggleButton
+            {
+                Style = (Style)Application.Current.Resources["NavItemStyle"],
+                Margin = new Thickness(24, 0, 12, 0),
+                Tag = name,
+                Content = BuildTagNavContent(name, color),
+            };
+            btn.Click += TagNav_Click;
+            TagsPanel.Children.Add(btn);
+            _navButtons.Add(btn);
+            _tagNavButtons.Add(btn);
+        }
+    }
+
+    private static object BuildTagNavContent(string name, string colorHex)
     {
         var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(24) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-        var icon = new FontIcon { Glyph = glyph, FontSize = 15, VerticalAlignment = VerticalAlignment.Center };
-        if (colorHex != null) icon.Foreground = new SolidColorBrush(ConvertHex(colorHex));
-        Grid.SetColumn(icon, 0);
+        var diamond = new FontIcon
+        {
+            Glyph = "\u25C6",
+            FontSize = 10,
+            Foreground = new SolidColorBrush(ConvertHex(colorHex)),
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        Grid.SetColumn(diamond, 0);
 
-        var label = new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center };
+        var label = new TextBlock { Text = name, VerticalAlignment = VerticalAlignment.Center };
         Grid.SetColumn(label, 1);
 
-        grid.Children.Add(icon);
+        grid.Children.Add(diamond);
         grid.Children.Add(label);
         return grid;
     }
 
+    private void TagNav_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ToggleButton btn) return;
+        var checkedNow = btn.IsChecked == true;
+        foreach (var nav in _navButtons)
+        {
+            if (!ReferenceEquals(nav, btn)) nav.IsChecked = false;
+        }
+        btn.IsChecked = checkedNow;
+        GetPage()?.ApplyTagFilter(checkedNow ? btn.Tag as string : null);
+    }
+
     private static Color ConvertHex(string hex)
-        => ColorHelper.FromArgb(
+    {
+        // 兼容 "#RRGGBB"（TagStore 预设色）与 "#AARRGGBB"
+        if (hex.Length == 7)
+            return ColorHelper.FromArgb(255,
+                byte.Parse(hex.Substring(1, 2), System.Globalization.NumberStyles.HexNumber),
+                byte.Parse(hex.Substring(3, 2), System.Globalization.NumberStyles.HexNumber),
+                byte.Parse(hex.Substring(5, 2), System.Globalization.NumberStyles.HexNumber));
+        return ColorHelper.FromArgb(
             byte.Parse(hex.Substring(1, 2), System.Globalization.NumberStyles.HexNumber),
             byte.Parse(hex.Substring(3, 2), System.Globalization.NumberStyles.HexNumber),
             byte.Parse(hex.Substring(5, 2), System.Globalization.NumberStyles.HexNumber),
             byte.Parse(hex.Substring(7, 2), System.Globalization.NumberStyles.HexNumber));
+    }
 
     private void InitSectionChevrons()
     {
-        foreach (var chevron in new[] { PinnedChevron, DrivesChevron, NetworkChevron })
+        foreach (var chevron in new[] { PinnedChevron, DrivesChevron, NetworkChevron, TagsChevron })
         {
             chevron.RenderTransform = new RotateTransform { Angle = 0 };
             chevron.RenderTransformOrigin = new Point(0.5, 0.5);
@@ -612,6 +688,7 @@ public sealed partial class MainWindow : Window
             "PinnedPanel" => PinnedPanel,
             "DrivesPanel" => DrivesPanel,
             "NetworkPanel" => NetworkPanel,
+            "TagsPanel" => TagsPanel,
             _ => null,
         };
         var chevron = panelName switch
@@ -619,6 +696,7 @@ public sealed partial class MainWindow : Window
             "PinnedPanel" => PinnedChevron,
             "DrivesPanel" => DrivesChevron,
             "NetworkPanel" => NetworkChevron,
+            "TagsPanel" => TagsChevron,
             _ => null,
         };
         if (panel == null || chevron == null) return;
@@ -639,6 +717,18 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        if (tag == "::RECYCLE")
+        {
+            // 回收站是 Shell 命名空间，不在文件系统内 —— 交给系统资源管理器打开
+            btn.IsChecked = false;
+            try
+            {
+                Process.Start(new ProcessStartInfo("shell:RecycleBinFolder") { UseShellExecute = true });
+            }
+            catch { /* 打开失败忽略 */ }
+            return;
+        }
+
         foreach (var nav in _navButtons)
         {
             if (!ReferenceEquals(nav, btn)) nav.IsChecked = false;
@@ -654,29 +744,27 @@ public sealed partial class MainWindow : Window
         NavigateTo("::NETWORK", addToHistory: false);
     }
 
-    private void HamburgerButton_Click(object sender, RoutedEventArgs e)
-    {
-        _navCollapsed = !_navCollapsed;
-        NavColumn.Width = new GridLength(_navCollapsed ? 0 : 312);
-        SidebarRoot.Visibility = _navCollapsed ? Visibility.Collapsed : Visibility.Visible;
-        CommandBarGrid.Margin = new Thickness(_navCollapsed ? 12 : 312, 0, 12, 0);
-    }
-
     private void UpdateNavSelection(string path)
     {
         var normalized = path.TrimEnd('\\').ToLowerInvariant();
+        var profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         foreach (var btn in _navButtons)
         {
             if (btn.Tag is not string tag) continue;
             var target = ResolveTag(tag);
-            btn.IsChecked = target != null &&
-                            string.Equals(target.TrimEnd('\\'), normalized, StringComparison.OrdinalIgnoreCase);
+            var match = target != null &&
+                        string.Equals(target.TrimEnd('\\'), normalized, StringComparison.OrdinalIgnoreCase);
+            // 用户目录同时命中"主页"和固定区"YU.GU"时，只点亮固定项，避免双高亮
+            if (match && tag == "Home" && string.Equals(normalized, profile.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
+                match = false;
+            btn.IsChecked = match;
         }
     }
 
     private static string? ResolveTag(string tag) => tag switch
     {
         "Home" => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+        "::PROFILE" => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
         "Desktop" => Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
         "Downloads" => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads"),
         "Documents" => Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
@@ -758,15 +846,16 @@ public sealed partial class MainWindow : Window
         ViewDetails.IsChecked = name == "详细信息";
         ViewList.IsChecked = name == "列表";
         ViewTiles.IsChecked = name == "大图标";
-        LayoutDetails.IsChecked = name == "详细信息";
-        LayoutList.IsChecked = name == "列表";
-        LayoutTiles.IsChecked = name == "大图标";
     }
 
     private void OnPageNavigationRequested(object? sender, string path) => NavigateTo(path);
 
     private void OnPageCountChanged(object? sender, int count)
-        => CountText.Text = $"{count} 个项目";
+    {
+        CountText.Text = $"{count} 个项目";
+        if (sender is FileExplorerPage page)
+            TotalSizeText.Text = page.TotalSizeDisplay;
+    }
 
     private void UpdateBreadcrumb(string path)
     {
@@ -886,8 +975,6 @@ public sealed partial class MainWindow : Window
 
     private void DeleteButton_Click(object sender, RoutedEventArgs e) => _ = GetPage()?.DeleteSelectedAsync();
 
-    private void OpenButton_Click(object sender, RoutedEventArgs e) => GetPage()?.OpenSelection();
-
     private void SortButton_Click(object sender, RoutedEventArgs e) { /* Flyout 自动弹出 */ }
 
     private void SortOption_Click(object sender, RoutedEventArgs e)
@@ -915,8 +1002,6 @@ public sealed partial class MainWindow : Window
         GetPage()?.SetView(item.Text);
     }
 
-    private void CycleViewButton_Click(object sender, RoutedEventArgs e) => GetPage()?.CycleView();
-
     private void SearchBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs e)
     {
         // 清空搜索框时恢复完整列表
@@ -925,6 +1010,30 @@ public sealed partial class MainWindow : Window
         {
             GetPage()?.ApplySearch(string.Empty);
         }
+    }
+
+    private void SearchToggle_Click(object sender, RoutedEventArgs e)
+    {
+        if (SearchBox.Visibility == Visibility.Visible)
+        {
+            CollapseSearchBox();
+        }
+        else
+        {
+            SearchBox.Visibility = Visibility.Visible;
+            SearchBox.Focus(FocusState.Programmatic);
+        }
+    }
+
+    private void SearchBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(SearchBox.Text)) CollapseSearchBox();
+    }
+
+    private void CollapseSearchBox()
+    {
+        SearchBox.Visibility = Visibility.Collapsed;
+        if (GetPage() != null) GetPage()!.ApplySearch(string.Empty);
     }
 
     private void ToggleHiddenItem_Click(object sender, RoutedEventArgs e)
@@ -943,10 +1052,7 @@ public sealed partial class MainWindow : Window
     {
         _previewOpen = !_previewOpen;
         PreviewPane.Visibility = _previewOpen ? Visibility.Visible : Visibility.Collapsed;
-        var brush = new SolidColorBrush(
-            (Color)Application.Current.Resources[_previewOpen ? "FsheAccentColor" : "FsheStrokeColor"]);
-        PreviewPaneButton.BorderBrush = brush;
-        PaneToggleButton.Foreground = new SolidColorBrush(
+        PreviewPaneButton.Foreground = new SolidColorBrush(
             (Color)Application.Current.Resources[_previewOpen ? "FsheAccentColor" : "FsheTextColor"]);
     }
 
@@ -1003,23 +1109,19 @@ public sealed partial class MainWindow : Window
             byte.Parse(hex.Substring(5, 2), System.Globalization.NumberStyles.HexNumber)));
     }
 
+    /// <summary>递归统计文件夹总大小与文件数（实现见 FileSystemItem.CalcFolderSize）。</summary>
+    private static (long Size, int Files) CalcFolder(string root) => FileSystemItem.CalcFolderSize(root);
+
     // ================== 标签 ==================
 
-    private void TagsButton_Click(object sender, RoutedEventArgs e)
+    private void TagButton_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not ToggleButton btn) return;
-        btn.IsChecked = false;
+        if (sender is not FrameworkElement btn) return;
 
         // 注意：ToggleButton.Flyout 属性元素会触发 XamlCompiler Pass1 静默崩溃，
         // 因此标签菜单改为代码构建后 ShowAt 弹出。
         var menu = new MenuFlyout();
-        foreach (var (label, color) in new[]
-                 {
-                     ("重要", "#FF6B6B"),
-                     ("工作", "#4CC2FF"),
-                     ("个人", "#54D18B"),
-                     ("收藏", "#FFC83D"),
-                 })
+        foreach (var (label, color) in TagStore.AllTags())
         {
             var item = new MenuFlyoutItem
             {
@@ -1027,11 +1129,8 @@ public sealed partial class MainWindow : Window
                 Tag = label,
                 Icon = new FontIcon
                 {
-                    Glyph = "\u25CF",
-                    Foreground = new SolidColorBrush(ColorHelper.FromArgb(255,
-                        byte.Parse(color.Substring(1, 2), System.Globalization.NumberStyles.HexNumber),
-                        byte.Parse(color.Substring(3, 2), System.Globalization.NumberStyles.HexNumber),
-                        byte.Parse(color.Substring(5, 2), System.Globalization.NumberStyles.HexNumber))),
+                    Glyph = "\u25C6",
+                    Foreground = new SolidColorBrush(ConvertHex(color)),
                 },
             };
             item.Click += TagMenuItem_Click;
@@ -1054,208 +1153,6 @@ public sealed partial class MainWindow : Window
             var selected = GetPage()?.GetSelected();
             if (selected is { Count: > 0 }) UpdatePreview(selected[0]);
         }
-    }
-
-    // ================== 共享 ==================
-
-    private async void ShareButton_Click(object sender, RoutedEventArgs e)
-    {
-        var page = GetPage();
-        if (page == null) return;
-        var items = page.GetSelected();
-        if (items.Count == 0)
-        {
-            await ShowMessageDialogAsync("共享", "请先勾选要共享的项目。");
-            return;
-        }
-
-        var paths = items.Select(i => i.FullPath).ToList();
-        var dialog = new ContentDialog
-        {
-            XamlRoot = Content.XamlRoot,
-            Title = "共享 / 发送",
-            Content = new StackPanel
-            {
-                Spacing = 8,
-                Children =
-                {
-                    new TextBlock
-                    {
-                        TextWrapping = TextWrapping.WrapWholeWords,
-                        Text = $"已选择 {paths.Count} 个项目，可复制完整路径，或在系统文件资源管理器中定位。",
-                    },
-                    new TextBlock
-                    {
-                        Opacity = 0.6,
-                        FontSize = 12,
-                        TextWrapping = TextWrapping.WrapWholeWords,
-                        Text = string.Join("\n", paths),
-                    },
-                },
-            },
-            PrimaryButtonText = "复制路径",
-            SecondaryButtonText = "在资源管理器中显示",
-            CloseButtonText = "取消",
-        };
-
-        var result = await dialog.ShowAsync();
-        if (result == ContentDialogResult.Primary)
-        {
-            var package = new DataPackage();
-            package.SetText(string.Join("\n", paths));
-            Clipboard.SetContent(package);
-        }
-        else if (result == ContentDialogResult.Secondary)
-        {
-            try
-            {
-                var target = paths[0];
-                if (Directory.Exists(target))
-                    Process.Start(new ProcessStartInfo("explorer.exe", target) { UseShellExecute = true });
-                else
-                    Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{target}\"") { UseShellExecute = true });
-            }
-            catch { /* 忽略定位失败 */ }
-        }
-    }
-
-    // ================== 属性 ==================
-
-    private async void PropertiesButton_Click(object sender, RoutedEventArgs e)
-    {
-        var page = GetPage();
-        if (page == null) return;
-        var items = page.GetSelected();
-
-        string title;
-        string typeLine;
-        string locationLine;
-        string sizeLine;
-        string timeLines;
-        string attrLine;
-        string tagLine;
-
-        if (items.Count == 0)
-        {
-            // 无勾选时显示当前文件夹属性
-            var dir = _currentPath;
-            if (!Directory.Exists(dir)) return;
-            var info = new DirectoryInfo(dir);
-            title = info.Name;
-            typeLine = "类型：文件夹";
-            locationLine = $"位置：{info.Parent?.FullName}";
-            sizeLine = "大小：计算中…";
-            timeLines = $"创建时间：{info.CreationTime:yyyy/MM/dd HH:mm:ss}\n" +
-                        $"修改时间：{info.LastWriteTime:yyyy/MM/dd HH:mm:ss}";
-            attrLine = "属性：" + DescribeAttributes(FileAttributes.Normal);
-            tagLine = "标签：（无）";
-            await ShowPropertiesDialogAsync(title, typeLine, locationLine, sizeLine, timeLines, attrLine, tagLine,
-                computeSize: () =>
-                {
-                    var (size, count) = CalcFolder(dir);
-                    return $"大小：{FileSystemItem.FormatBytes(size)}（{count} 个文件）";
-                });
-            return;
-        }
-
-        if (items.Count > 1)
-        {
-            var total = items.Where(i => !i.IsDirectory).Sum(i => SafeFileLength(i.FullPath));
-            title = $"{items.Count} 个项目";
-            typeLine = "类型：多个项目";
-            locationLine = $"位置：{_currentPath}";
-            sizeLine = $"大小：{FileSystemItem.FormatBytes(total)}";
-            timeLines = string.Empty;
-            attrLine = string.Empty;
-            tagLine = string.Empty;
-            await ShowPropertiesDialogAsync(title, typeLine, locationLine, sizeLine, timeLines, attrLine, tagLine);
-            return;
-        }
-
-        var item = items[0];
-        title = item.Name;
-        typeLine = $"类型：{item.TypeDisplay}";
-        locationLine = $"位置：{Path.GetDirectoryName(item.FullPath)}";
-        tagLine = $"标签：{(string.IsNullOrEmpty(item.FileTag) ? "（无）" : item.FileTag)}";
-
-        if (item.IsDirectory)
-        {
-            var info = new DirectoryInfo(item.FullPath);
-            sizeLine = "大小：计算中…";
-            timeLines = $"创建时间：{info.CreationTime:yyyy/MM/dd HH:mm:ss}\n" +
-                        $"修改时间：{info.LastWriteTime:yyyy/MM/dd HH:mm:ss}";
-            attrLine = "属性：" + DescribeAttributes(info.Attributes);
-            var folderPath = item.FullPath;
-            await ShowPropertiesDialogAsync(title, typeLine, locationLine, sizeLine, timeLines, attrLine, tagLine,
-                computeSize: () =>
-                {
-                    var (size, count) = CalcFolder(folderPath);
-                    return $"大小：{FileSystemItem.FormatBytes(size)}（{count} 个文件）";
-                });
-        }
-        else
-        {
-            var info = new FileInfo(item.FullPath);
-            sizeLine = $"大小：{FileSystemItem.FormatBytes(info.Length)}（{info.Length:N0} 字节）";
-            timeLines = $"创建时间：{info.CreationTime:yyyy/MM/dd HH:mm:ss}\n" +
-                        $"修改时间：{info.LastWriteTime:yyyy/MM/dd HH:mm:ss}\n" +
-                        $"访问时间：{info.LastAccessTime:yyyy/MM/dd HH:mm:ss}";
-            attrLine = "属性：" + DescribeAttributes(info.Attributes);
-            await ShowPropertiesDialogAsync(title, typeLine, locationLine, sizeLine, timeLines, attrLine, tagLine);
-        }
-    }
-
-    private async Task ShowPropertiesDialogAsync(string title, string typeLine, string locationLine,
-        string sizeLine, string timeLines, string attrLine, string tagLine, Func<string>? computeSize = null)
-    {
-        var sizeBlock = new TextBlock { Text = sizeLine, TextWrapping = TextWrapping.WrapWholeWords };
-        var panel = new StackPanel { Spacing = 8 };
-        void AddLine(string text)
-        {
-            if (!string.IsNullOrEmpty(text))
-                panel.Children.Add(new TextBlock { Text = text, TextWrapping = TextWrapping.WrapWholeWords });
-        }
-        AddLine(typeLine);
-        AddLine(locationLine);
-        panel.Children.Add(sizeBlock);
-        AddLine(timeLines);
-        AddLine(attrLine);
-        AddLine(tagLine);
-
-        var dialog = new ContentDialog
-        {
-            XamlRoot = Content.XamlRoot,
-            Title = title,
-            Content = panel,
-            CloseButtonText = "确定",
-        };
-        var shown = dialog.ShowAsync();
-
-        if (computeSize != null)
-        {
-            var text = await Task.Run(computeSize);
-            sizeBlock.Text = text;
-        }
-        await shown;
-    }
-
-    private static long SafeFileLength(string path)
-    {
-        try { return new FileInfo(path).Length; }
-        catch { return 0; }
-    }
-
-    /// <summary>递归统计文件夹总大小与文件数（实现见 FileSystemItem.CalcFolderSize）。</summary>
-    private static (long Size, int Files) CalcFolder(string root) => FileSystemItem.CalcFolderSize(root);
-
-    private static string DescribeAttributes(FileAttributes attr)
-    {
-        var parts = new List<string>();
-        if (attr.HasFlag(FileAttributes.ReadOnly)) parts.Add("只读");
-        if (attr.HasFlag(FileAttributes.Hidden)) parts.Add("隐藏");
-        if (attr.HasFlag(FileAttributes.System)) parts.Add("系统");
-        if (attr.HasFlag(FileAttributes.Archive)) parts.Add("存档");
-        return parts.Count == 0 ? "无" : string.Join("、", parts);
     }
 
     // ================== 设置 ==================
@@ -1298,18 +1195,6 @@ public sealed partial class MainWindow : Window
                 },
             },
             CloseButtonText = "关闭",
-        };
-        await dialog.ShowAsync();
-    }
-
-    private async Task ShowMessageDialogAsync(string title, string message)
-    {
-        var dialog = new ContentDialog
-        {
-            XamlRoot = Content.XamlRoot,
-            Title = title,
-            Content = new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
-            CloseButtonText = "确定",
         };
         await dialog.ShowAsync();
     }

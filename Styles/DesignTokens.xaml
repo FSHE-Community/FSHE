@@ -160,7 +160,7 @@
     <Style x:Key="FileRowStyle" TargetType="ListViewItem">
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="Padding" Value="0" />
-        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="MinHeight" Value="30" />
         <Setter Property="CornerRadius" Value="{StaticResource FsheRadiusSmall}" />
         <Setter Property="UseSystemFocusVisuals" Value="False" />
         <Setter Property="Template">

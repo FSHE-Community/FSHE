@@ -13,8 +13,9 @@
     <WinUISDKReferences>false</WinUISDKReferences>
     <WindowsPackageType>None</WindowsPackageType>
     <EnableMsixTooling>false</EnableMsixTooling>
-    <WindowsAppSDKBootstrapInitializer>false</WindowsAppSDKBootstrapInitializer>
-    <WindowsAppRuntimeAutoInitializer>false</WindowsAppRuntimeAutoInitializer>
+    <WindowsAppSDKBootstrapInitializer>true</WindowsAppSDKBootstrapInitializer>
+    <WindowsAppRuntimeAutoInitializer>true</WindowsAppRuntimeAutoInitializer>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>

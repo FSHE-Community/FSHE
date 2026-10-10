@@ -1,11 +1,11 @@
 ; FSHE 安装脚本 — Inno Setup 6.7
-; 运行路径：D:\Users\Ivan1\Documents\FSHE
+; 在仓库根目录下用 ISCC 编译本脚本，源文件取自 installer_src\
 
 #define MyAppName "FSHE"
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "YG-0"
 #define MyAppExeName "FSHE.exe"
-#define MyAppSourceDir "bin\Debug\net10.0-windows10.0.26100.0\win-x64"
+#define MyAppSourceDir "installer_src"
 
 [Setup]
 AppId={{8F4C3D2A-1B5E-4D8F-A6C1-9D0E7F1A2B3C}

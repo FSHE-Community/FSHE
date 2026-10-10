@@ -22,11 +22,7 @@
     </Page.Transitions>
 
     <Border
-        Margin="0,0,12,12"
-        Background="{StaticResource FsheSurfaceBrush}"
-        BorderBrush="{StaticResource FsheStrokeBrush}"
-        BorderThickness="1"
-        CornerRadius="8">
+        Margin="0,0,12,42">
         <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -106,7 +102,9 @@
                 </Button>
                 <Button
                     Grid.Column="5"
-                    HorizontalAlignment="Left"
+                    HorizontalAlignment="Right"
+                    Margin="0,0,6,0"
+                    HorizontalContentAlignment="Right"
                     Background="Transparent"
                     BorderThickness="0"
                     Click="SortHeader_Click"
@@ -121,7 +119,7 @@
         </Border>
 
         <!-- ===== 内容 ===== -->
-        <Grid Grid.Row="1" Margin="0,2,0,52">
+        <Grid Grid.Row="1" Margin="0,2,0,0">
 
             <!-- 详细信息 -->
             <ListView
@@ -148,7 +146,8 @@
                                 Grid.Column="0"
                                 AutomationProperties.Name="{Binding Name}"
                                 VerticalAlignment="Center"
-                                IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                                IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                Visibility="{Binding IsSelected, Converter={StaticResource BoolToVisibilityConverter}}" />
                             <StackPanel Grid.Column="1" Margin="0,0,8,0" Orientation="Horizontal" Spacing="10">
                                 <Image
                                     VerticalAlignment="Center"
@@ -180,14 +179,18 @@
                                 TextTrimming="CharacterEllipsis" />
                             <Grid
                                 Grid.Column="5"
+                                Margin="0,0,6,0"
+                                HorizontalAlignment="Right"
                                 VerticalAlignment="Center">
                                 <TextBlock
+                                    HorizontalAlignment="Right"
                                     Style="{StaticResource CaptionTextBlockStyle}"
                                     Foreground="{Binding IsDirectory, Converter={StaticResource FolderAccentBrushConverter}}"
                                     Text="{Binding SizeDisplay}"
                                     Visibility="{Binding IsDirectory, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=invert}" />
                                 <HyperlinkButton
                                     Padding="0"
+                                    HorizontalAlignment="Right"
                                     VerticalAlignment="Center"
                                     Click="FolderSize_Click"
                                     Content="{Binding SizeDisplay}"

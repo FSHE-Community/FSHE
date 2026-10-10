@@ -71,6 +71,7 @@ FSHE/
 | `Ctrl+W` | 关闭当前标签页 |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | 切换前后标签 |
 | `Ctrl+L` / `Alt+D` | 聚焦地址栏 |
+| `Ctrl+F` | 展开并聚焦搜索框 |
 | `F5` | 刷新当前目录 |
 | `F2` | 重命名（选中文件时） |
 | `Delete` | 移入回收站 |

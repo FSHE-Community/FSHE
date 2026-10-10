@@ -229,7 +229,7 @@ public class FileSystemItem : INotifyPropertyChanged
         };
     }
 
-    /// <summary>相对时间：刚刚 / N 分钟前 / N 小时前 / N 天前 / 绝对日期。</summary>
+    /// <summary>相对时间：刚刚 / N 分钟前 / N 小时前 / N 天前 / 中文日期。</summary>
     private static string FormatRelativeTime(DateTime time)
     {
         var delta = DateTime.Now - time;
@@ -237,7 +237,7 @@ public class FileSystemItem : INotifyPropertyChanged
         if (delta.TotalMinutes < 60) return $"{(int)delta.TotalMinutes} 分钟前";
         if (delta.TotalHours < 24) return $"{(int)delta.TotalHours} 小时前";
         if (delta.TotalDays < 7) return $"{(int)delta.TotalDays} 天前";
-        return time.ToString("yyyy/MM/dd HH:mm");
+        return time.ToString("yyyy年M月d日");
     }
 
     private static string DescribeFileType(string ext) => ext.ToLowerInvariant() switch
@@ -258,6 +258,8 @@ public class FileSystemItem : INotifyPropertyChanged
         ".xls" or ".xlsx" => "Excel 工作表",
         ".csv" => "CSV 数据",
         ".exe" or ".msi" => "应用程序",
+        ".lnk" => "快捷方式",
+        ".url" => "Internet 快捷方式",
         "" => "文件",
         _ => $"{ext.TrimStart('.').ToUpperInvariant()} 文件",
     };
@@ -349,6 +351,23 @@ public static class TagStore
 
     public static string Get(string fullPath)
         => Tags.TryGetValue(fullPath, out var tag) ? tag : string.Empty;
+
+    /// <summary>全部标签（预设 + tags.json 中出现过的），按预设顺序在前，供侧边栏标签分区与打标签菜单使用。</summary>
+    public static IReadOnlyList<(string Name, string Color)> AllTags()
+    {
+        var list = new List<(string, string)>();
+        var seen = new HashSet<string>();
+        foreach (var kv in PresetColors)
+        {
+            if (seen.Add(kv.Key)) list.Add((kv.Key, kv.Value));
+        }
+        foreach (var tag in Tags.Values)
+        {
+            if (!string.IsNullOrWhiteSpace(tag) && seen.Add(tag))
+                list.Add((tag, PresetColors.TryGetValue(tag, out var c) ? c : "#9B9B9B"));
+        }
+        return list;
+    }
 
     public static void Set(string fullPath, string? tag)
     {

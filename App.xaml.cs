@@ -1,3 +1,4 @@
+using System.IO;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
@@ -29,6 +30,16 @@ public partial class App : Application
     public App()
     {
         InitializeComponent();
+        UnhandledException += (_, e) =>
+        {
+            try
+            {
+                File.AppendAllText(
+                    System.IO.Path.Combine(System.IO.Path.GetTempPath(), "fshe-crash.log"),
+                    $"[{DateTime.Now:HH:mm:ss}] Handled={e.Handled} {e.Message}\n{e.Exception}\n\n");
+            }
+            catch { }
+        };
     }
 
     /// <summary>
