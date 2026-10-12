@@ -558,9 +558,19 @@ public sealed partial class MainWindow : Window
             }
             catch { continue; }
 
-            var label = string.IsNullOrWhiteSpace(drive.VolumeLabel)
-                ? drive.Name.TrimEnd('\\')
-                : $"{drive.VolumeLabel} ({drive.Name.TrimEnd('\\')})";
+            var letter = drive.Name.TrimEnd('\\');
+            string label;
+            if (string.IsNullOrWhiteSpace(drive.VolumeLabel))
+            {
+                // 无卷标时用 Windows 中文习惯名（系统 C: / 本地磁盘）
+                label = drive.DriveType == DriveType.Fixed
+                    ? (letter == "C:" ? $"系统 ({letter})" : $"本地磁盘 ({letter})")
+                    : letter;
+            }
+            else
+            {
+                label = $"{drive.VolumeLabel} ({letter})";
+            }
 
             var btn = new ToggleButton
             {
@@ -629,8 +639,8 @@ public sealed partial class MainWindow : Window
 
         var diamond = new FontIcon
         {
-            Glyph = "\u25C6",
-            FontSize = 10,
+            Glyph = "\uE8EC",
+            FontSize = 13,
             Foreground = new SolidColorBrush(ConvertHex(colorHex)),
             VerticalAlignment = VerticalAlignment.Center,
         };
@@ -678,6 +688,9 @@ public sealed partial class MainWindow : Window
             chevron.RenderTransform = new RotateTransform { Angle = 0 };
             chevron.RenderTransformOrigin = new Point(0.5, 0.5);
         }
+        // 网络分区默认收起
+        NetworkPanel.Visibility = Visibility.Collapsed;
+        if (NetworkChevron.RenderTransform is RotateTransform rt) rt.Angle = -90;
     }
 
     private void SectionHeader_Click(object sender, RoutedEventArgs e)
@@ -1129,7 +1142,7 @@ public sealed partial class MainWindow : Window
                 Tag = label,
                 Icon = new FontIcon
                 {
-                    Glyph = "\u25C6",
+                    Glyph = "\uE8EC",
                     Foreground = new SolidColorBrush(ConvertHex(color)),
                 },
             };

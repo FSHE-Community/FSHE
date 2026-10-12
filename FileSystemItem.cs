@@ -171,7 +171,7 @@ public class FileSystemItem : INotifyPropertyChanged
     /// <summary>Windows 系统真实图标（从 SHGetFileInfo 提取，已缓存）。</summary>
     public ImageSource IconSource { get; set; }
 
-    /// <summary>用户打的标签（重要/工作/个人/收藏），变化时刷新标签列。</summary>
+    /// <summary>用户打的标签（Home/Work/Photos/Important/Software 等），变化时刷新标签列。</summary>
     public string FileTag
     {
         get => _fileTag;
@@ -325,10 +325,11 @@ public static class TagStore
     /// <summary>内置标签及其颜色（ARGB 十六进制）。</summary>
     public static readonly IReadOnlyDictionary<string, string> PresetColors = new Dictionary<string, string>
     {
-        ["重要"] = "#FF6B6B",
-        ["工作"] = "#4CC2FF",
-        ["个人"] = "#54D18B",
-        ["收藏"] = "#FFC83D",
+        ["Home"] = "#2E7BE0",
+        ["Work"] = "#E5534B",
+        ["Photos"] = "#4CC2FF",
+        ["Important"] = "#54D18B",
+        ["Software"] = "#1B5FD0",
     };
 
     private static Dictionary<string, string> Tags
