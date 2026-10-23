@@ -50,6 +50,20 @@ dotnet run
 .\bin\Debug\net10.0-windows10.0.26100.0\win-x64\FSHE.exe
 ```
 
+### 打包安装程序
+
+仓库根目录提供一键脚本（自动 publish、补齐 WinUI 运行时资源、同步到 `installer_src`、调用 Inno Setup 编译）：
+
+```powershell
+.\publish-installer.ps1
+```
+
+- 需安装 [Inno Setup 6](https://jrsoftware.org/isinfo.php)。脚本会依次在 `E:\Inno\Inno Setup 6\`、Program Files、注册表中查找 `ISCC.exe`，也可用 `-IsccPath` 手动指定
+- 产物：`installer_output\FSHE-Setup-<版本>.exe`
+- 只准备发布文件、不编译安装包：`.\publish-installer.ps1 -SkipInstaller`
+
+> 注意：非打包模式下，`dotnet publish` 默认不会带上 `*.xbf` 与 `FSHE.pri`，缺了会导致应用启动即崩溃。`FSHE.csproj` 里的 `CopyWinUIResourcesToPublish` 目标已自动处理，无需手动拷贝。
+
 ## 项目结构
 
 ```

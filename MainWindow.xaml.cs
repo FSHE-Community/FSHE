@@ -40,6 +40,9 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
 
+        // Files 同款云母背景
+        SystemBackdrop = new MicaBackdrop();
+
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
         ConfigureCaptionButtons();
@@ -55,11 +58,11 @@ public sealed partial class MainWindow : Window
         BuildTagsSection();
         InitSectionChevrons();
 
-        // 启动时两个标签页：用户主目录 + 桌面
-        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        // 启动时两个标签页：驱动器主页 + 桌面
         var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
-        Tabs.Add(new TabItem("主页", home));
+        Tabs.Add(new TabItem("主页", "::HOME"));
         Tabs.Add(new TabItem("桌面", Directory.Exists(desktop) ? desktop : home));
         SelectTab(Tabs[1]);
         Tabs.CollectionChanged += (_, __) => ScheduleUpdateTabVisuals();
@@ -132,6 +135,19 @@ public sealed partial class MainWindow : Window
         SelectTab(tab);
     }
 
+    // ================== 侧边栏 / 地址栏 ==================
+
+    private bool _sidebarVisible = true;
+
+    private void SidebarToggle_Click(object sender, RoutedEventArgs e)
+    {
+        _sidebarVisible = !_sidebarVisible;
+        NavColumn.Width = new GridLength(_sidebarVisible ? 240 : 0);
+        SidebarRoot.Visibility = _sidebarVisible ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void GoButton_Click(object sender, RoutedEventArgs e) => EnterAddressEditMode();
+
     // ================== 键盘快捷键 ==================
 
     private readonly Stack<TabItem> _recentlyClosed = new();
@@ -203,11 +219,7 @@ public sealed partial class MainWindow : Window
             Key = VirtualKey.F,
             Modifiers = VirtualKeyModifiers.Control
         };
-        kSearch.Invoked += (_, __) =>
-        {
-            SearchBox.Visibility = Visibility.Visible;
-            SearchBox.Focus(FocusState.Programmatic);
-        };
+        kSearch.Invoked += (_, __) => ShowSearchBox();
         host.Add(kSearch);
     }
 
@@ -239,6 +251,11 @@ public sealed partial class MainWindow : Window
 
     private void EnterAddressEditMode()
     {
+        if (SearchBox.Visibility == Visibility.Visible)
+        {
+            SearchBox.Visibility = Visibility.Collapsed;
+            GetPage()?.ApplySearch(string.Empty);
+        }
         if (_activeTab != null) AddressEdit.Text = _activeTab.Path;
         PathBreadcrumb.Visibility = Visibility.Collapsed;
         AddressEdit.Visibility = Visibility.Visible;
@@ -249,7 +266,9 @@ public sealed partial class MainWindow : Window
     private void ExitAddressEditMode(bool navigate)
     {
         AddressEdit.Visibility = Visibility.Collapsed;
-        PathBreadcrumb.Visibility = Visibility.Visible;
+        PathBreadcrumb.Visibility = SearchBox.Visibility == Visibility.Visible
+            ? Visibility.Collapsed
+            : Visibility.Visible;
         if (navigate)
         {
             var path = AddressEdit.Text?.Trim();
@@ -412,10 +431,22 @@ public sealed partial class MainWindow : Window
         {
             var isActive = ReferenceEquals(tab, _activeTab);
             var res = Microsoft.UI.Xaml.Application.Current.Resources;
-            border.Background = isActive ? (Brush)res["FsheSurfaceBrush"] : _transparentBrush;
-            var indicator = FindChild<Border>(border, "TabIndicator");
-            if (indicator != null) indicator.Visibility = isActive ? Visibility.Visible : Visibility.Collapsed;
+            border.Background = isActive ? (Brush)res["FsheTabSelectedBrush"] : _transparentBrush;
         }
+    }
+
+    private void TabBorder_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is not Border border) return;
+        if (border.DataContext is TabItem tab && !ReferenceEquals(tab, _activeTab))
+            border.Background = (Brush)Microsoft.UI.Xaml.Application.Current.Resources["FsheTabHoverBrush"];
+    }
+
+    private void TabBorder_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is not Border border) return;
+        if (border.DataContext is TabItem tab && !ReferenceEquals(tab, _activeTab))
+            border.Background = _transparentBrush;
     }
 
     private void TabItemTapped(object sender, TappedRoutedEventArgs e)
@@ -441,7 +472,7 @@ public sealed partial class MainWindow : Window
     private void UpdateTabVisuals()
     {
         var res = Microsoft.UI.Xaml.Application.Current.Resources;
-        var surfaceBrush = (Brush)res["FsheSurfaceBrush"];
+        var selectedBrush = (Brush)res["FsheTabSelectedBrush"];
         var count = VisualTreeHelper.GetChildrenCount(TabsItemsControl);
         foreach (var tab in Tabs)
         {
@@ -455,9 +486,7 @@ public sealed partial class MainWindow : Window
             var border = FindChild<Border>(container, "TabBorder");
             if (border == null) continue;
             var isActive = ReferenceEquals(tab, _activeTab);
-            border.Background = isActive ? surfaceBrush : _transparentBrush;
-            var indicator = FindChild<Border>(container, "TabIndicator");
-            if (indicator != null) indicator.Visibility = isActive ? Visibility.Visible : Visibility.Collapsed;
+            border.Background = isActive ? selectedBrush : _transparentBrush;
         }
     }
 
@@ -695,7 +724,10 @@ public sealed partial class MainWindow : Window
 
     private void SectionHeader_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not ToggleButton { Tag: string panelName }) return;
+        if (sender is not ToggleButton btn) return;
+        // 分区头只做折叠开关，不保留 Checked 态——否则裸 ToggleButton 默认样式会显示强调蓝底
+        btn.IsChecked = false;
+        if (btn.Tag is not string panelName) return;
         FrameworkElement? panel = panelName switch
         {
             "PinnedPanel" => PinnedPanel,
@@ -730,18 +762,6 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        if (tag == "::RECYCLE")
-        {
-            // 回收站是 Shell 命名空间，不在文件系统内 —— 交给系统资源管理器打开
-            btn.IsChecked = false;
-            try
-            {
-                Process.Start(new ProcessStartInfo("shell:RecycleBinFolder") { UseShellExecute = true });
-            }
-            catch { /* 打开失败忽略 */ }
-            return;
-        }
-
         foreach (var nav in _navButtons)
         {
             if (!ReferenceEquals(nav, btn)) nav.IsChecked = false;
@@ -759,25 +779,27 @@ public sealed partial class MainWindow : Window
 
     private void UpdateNavSelection(string path)
     {
+        if (path == "::HOME")
+        {
+            foreach (var b in _navButtons) b.IsChecked = false;
+            HomeNav.IsChecked = true;
+            return;
+        }
+
         var normalized = path.TrimEnd('\\').ToLowerInvariant();
-        var profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         foreach (var btn in _navButtons)
         {
             if (btn.Tag is not string tag) continue;
             var target = ResolveTag(tag);
-            var match = target != null &&
-                        string.Equals(target.TrimEnd('\\'), normalized, StringComparison.OrdinalIgnoreCase);
-            // 用户目录同时命中"主页"和固定区"YU.GU"时，只点亮固定项，避免双高亮
-            if (match && tag == "Home" && string.Equals(normalized, profile.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
-                match = false;
-            btn.IsChecked = match;
+            btn.IsChecked = target != null &&
+                            string.Equals(target.TrimEnd('\\'), normalized, StringComparison.OrdinalIgnoreCase);
         }
     }
 
     private static string? ResolveTag(string tag) => tag switch
     {
-        "Home" => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        "::PROFILE" => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+        "Home" => "::HOME",
+        "::RECYCLE" => "::RECYCLE",
         "Desktop" => Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
         "Downloads" => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads"),
         "Documents" => Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
@@ -794,9 +816,15 @@ public sealed partial class MainWindow : Window
     private void NavigateTo(string path, bool addToHistory = true)
     {
         if (string.IsNullOrEmpty(path)) return;
-        if (path != "::NETWORK" && !Directory.Exists(path)) return;
+        if (path == "::HOME")
+        {
+            ShowHomePage(addToHistory);
+            return;
+        }
+        var isVirtual = path is "::NETWORK" or "::RECYCLE";
+        if (!isVirtual && !Directory.Exists(path)) return;
 
-        if (path != "::NETWORK") path = Path.GetFullPath(path);
+        if (!isVirtual) path = Path.GetFullPath(path);
         if (addToHistory && !string.IsNullOrEmpty(_currentPath) &&
             !string.Equals(_currentPath, path, StringComparison.OrdinalIgnoreCase))
         {
@@ -808,10 +836,16 @@ public sealed partial class MainWindow : Window
         if (_activeTab != null)
         {
             _activeTab.Path = path;
-            _activeTab.Title = new DirectoryInfo(path).Name;
+            _activeTab.Title = path switch
+            {
+                "::NETWORK" => "网络",
+                "::RECYCLE" => "回收站",
+                _ => new DirectoryInfo(path).Name,
+            };
             if (string.IsNullOrEmpty(_activeTab.Title)) _activeTab.Title = path;
         }
 
+        CommandBarGrid.Visibility = Visibility.Visible;
         UpdateBreadcrumb(path);
         UpdateNavigationButtons();
         UpdateNavSelection(path);
@@ -829,6 +863,38 @@ public sealed partial class MainWindow : Window
             SyncViewMenus(page.CurrentViewName);
             UpdatePreview(null);
         }
+    }
+
+    /// <summary>显示驱动器主页（::HOME）。</summary>
+    private void ShowHomePage(bool addToHistory)
+    {
+        if (addToHistory && !string.IsNullOrEmpty(_currentPath) && _currentPath != "::HOME")
+        {
+            _backStack.Push(_currentPath);
+            _forwardStack.Clear();
+        }
+
+        _currentPath = "::HOME";
+        if (_activeTab != null)
+        {
+            _activeTab.Path = "::HOME";
+            _activeTab.Title = "主页";
+        }
+
+        // Files 主页没有命令栏
+        CommandBarGrid.Visibility = Visibility.Collapsed;
+        PathSegments.Clear();
+        PathSegments.Add("主页");
+        UpdateNavigationButtons();
+        UpdateNavSelection("::HOME");
+
+        ContentFrame.Navigate(typeof(HomePage));
+        if (ContentFrame.Content is HomePage home)
+            home.NavigationRequested += (_, root) => NavigateTo(root);
+
+        CountText.Text = "—";
+        TotalSizeText.Text = string.Empty;
+        UpdatePreview(null);
     }
 
     private void OnPageSortChanged(object? sender, (string Key, bool Ascending) a)
@@ -873,6 +939,8 @@ public sealed partial class MainWindow : Window
     private void UpdateBreadcrumb(string path)
     {
         PathSegments.Clear();
+        if (path == "::NETWORK") { PathSegments.Add("网络"); return; }
+        if (path == "::RECYCLE") { PathSegments.Add("回收站"); return; }
         var root = Path.GetPathRoot(path) ?? string.Empty;
 
         // 根分区显示为 "Data (D:)" 形式
@@ -916,6 +984,7 @@ public sealed partial class MainWindow : Window
 
     private string BuildPathFromSegments(int index)
     {
+        if (_currentPath is "::HOME" or "::NETWORK" or "::RECYCLE") return _currentPath;
         var root = Path.GetPathRoot(_currentPath) ?? string.Empty;
         if (index <= 0) return root.Length > 0 ? root : _currentPath;
         var parts = _currentPath.Substring(root.Length)
@@ -928,7 +997,9 @@ public sealed partial class MainWindow : Window
     {
         BackButton.IsEnabled = _backStack.Count > 0;
         ForwardButton.IsEnabled = _forwardStack.Count > 0;
-        UpButton.IsEnabled = !string.IsNullOrEmpty(_currentPath) &&
+        UpButton.IsEnabled = _currentPath is not ("::HOME" or "::NETWORK" or "::RECYCLE") &&
+                             !string.IsNullOrEmpty(_currentPath) &&
+                             Directory.Exists(_currentPath) &&
                              Path.GetDirectoryName(_currentPath.TrimEnd(Path.DirectorySeparatorChar)) != null;
     }
 
@@ -952,12 +1023,13 @@ public sealed partial class MainWindow : Window
 
     private void UpButton_Click(object sender, RoutedEventArgs e)
     {
+        if (_currentPath is "::HOME" or "::NETWORK" or "::RECYCLE" || !Directory.Exists(_currentPath)) return;
         var parent = Path.GetDirectoryName(_currentPath.TrimEnd(Path.DirectorySeparatorChar));
         if (parent != null) NavigateTo(parent);
     }
 
     private void HomeButton_Click(object sender, RoutedEventArgs e)
-        => NavigateTo(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+        => NavigateTo("::HOME");
 
     private void RefreshButton_Click(object sender, RoutedEventArgs e) => GetPage()?.Refresh();
 
@@ -1033,9 +1105,17 @@ public sealed partial class MainWindow : Window
         }
         else
         {
-            SearchBox.Visibility = Visibility.Visible;
-            SearchBox.Focus(FocusState.Programmatic);
+            ShowSearchBox();
         }
+    }
+
+    private void ShowSearchBox()
+    {
+        if (AddressEdit.Visibility == Visibility.Visible)
+            ExitAddressEditMode(navigate: false);
+        PathBreadcrumb.Visibility = Visibility.Collapsed;
+        SearchBox.Visibility = Visibility.Visible;
+        SearchBox.Focus(FocusState.Programmatic);
     }
 
     private void SearchBox_LostFocus(object sender, RoutedEventArgs e)
@@ -1046,6 +1126,8 @@ public sealed partial class MainWindow : Window
     private void CollapseSearchBox()
     {
         SearchBox.Visibility = Visibility.Collapsed;
+        if (AddressEdit.Visibility == Visibility.Collapsed)
+            PathBreadcrumb.Visibility = Visibility.Visible;
         if (GetPage() != null) GetPage()!.ApplySearch(string.Empty);
     }
 

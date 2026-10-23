@@ -10,31 +10,55 @@
     Title="FSHE"
     mc:Ignorable="d">
 
-    <Grid x:Name="RootGrid" Background="{StaticResource FsheWindowBrush}">
+    <Grid x:Name="RootGrid" Background="Transparent">
         <Grid.RowDefinitions>
             <RowDefinition Height="40" />
             <RowDefinition Height="48" />
-            <RowDefinition Height="44" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <!-- ============ Row 0：标签页标题栏 ============ -->
         <Grid x:Name="AppTitleBar" Grid.Row="0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="140" />
             </Grid.ColumnDefinitions>
 
+            <Button
+                x:Name="SidebarToggleButton"
+                Grid.Column="0"
+                Width="34"
+                Height="30"
+                Margin="6,0,4,0"
+                VerticalAlignment="Center"
+                Background="Transparent"
+                BorderThickness="0"
+                Click="SidebarToggle_Click"
+                ToolTipService.ToolTip="显示或隐藏侧边栏">
+                <Grid Width="16" Height="16">
+                    <Border BorderBrush="{StaticResource FsheTextSecondaryBrush}" BorderThickness="1.3" CornerRadius="4" />
+                    <Border
+                        Width="6"
+                        Height="10"
+                        Margin="3,0,0,0"
+                        HorizontalAlignment="Left"
+                        BorderBrush="{StaticResource FsheTextSecondaryBrush}"
+                        BorderThickness="1.3"
+                        CornerRadius="2" />
+                </Grid>
+            </Button>
+
             <ScrollViewer
                 x:Name="TabsScroll"
-                Grid.Column="0"
-                Margin="8,0,0,0"
+                Grid.Column="1"
+                Margin="2,0,0,0"
                 VerticalAlignment="Stretch"
                     HorizontalScrollBarVisibility="Hidden"
                     HorizontalScrollMode="Enabled"
                     VerticalScrollMode="Disabled"
                     BringIntoViewOnFocusChange="False">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Stretch">
                     <ItemsRepeater
                         x:Name="TabsItemsControl"
                         VerticalAlignment="Stretch">
@@ -45,16 +69,19 @@
                         <DataTemplate>
                             <Border
                                 x:Name="TabBorder"
-                                Height="34"
+                                Height="30"
                                 MinWidth="120"
                                 MaxWidth="240"
                                 Padding="16,0,4,0"
                                 Margin="2,0"
+                                VerticalAlignment="Center"
                                 Background="Transparent"
-                                CornerRadius="8,8,0,0"
+                                CornerRadius="6"
                                 Loaded="TabBorder_Loaded"
                                 Tapped="TabItemTapped"
                                 RightTapped="TabBorder_RightTapped"
+                                PointerEntered="TabBorder_PointerEntered"
+                                PointerExited="TabBorder_PointerExited"
                                 DataContext="{Binding}">
                                 <Border.RenderTransform>
                                     <CompositeTransform ScaleX="0.3" ScaleY="0.3" />
@@ -65,17 +92,12 @@
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="*" />
-                                        <RowDefinition Height="2" />
-                                    </Grid.RowDefinitions>
                                     <StackPanel
                                         Grid.Column="0"
-                                        Grid.RowSpan="2"
                                         Orientation="Horizontal"
                                         Spacing="8"
                                         VerticalAlignment="Center">
-                                        <FontIcon FontSize="12" Foreground="#FFC83D" Glyph="&#xE8B7;" />
+                                        <FontIcon FontSize="13" Foreground="#69B7FF" Glyph="&#xE7C3;" />
                                         <TextBlock
                                             MaxWidth="170"
                                             VerticalAlignment="Center"
@@ -83,13 +105,11 @@
                                             Text="{Binding Title}"
                                             TextTrimming="CharacterEllipsis" />
                                     </StackPanel>
-                                    <Border x:Name="TabIndicator" Grid.Row="1" Height="2" Background="{StaticResource FsheAccentBrush}" CornerRadius="1,1,0,0" Visibility="Collapsed" />
                                     <TextBlock
                                         Grid.Column="1"
-                                        Grid.RowSpan="2"
                                         Width="22"
                                         Height="22"
-                                        Margin="0,6,2,0"
+                                        Margin="0,4,2,0"
                                         VerticalAlignment="Center"
                                         HorizontalAlignment="Center"
                                         FontFamily="Segoe UI"
@@ -106,29 +126,28 @@
                         </DataTemplate>
                     </ItemsRepeater.ItemTemplate>
                 </ItemsRepeater>
+                        <Button
+                            Width="34"
+                            Height="34"
+                            Margin="4,0,0,0"
+                            VerticalAlignment="Center"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Click="NewTabButton_Click"
+                            ToolTipService.ToolTip="新建标签页 (Ctrl+T)">
+                            <FontIcon FontSize="13" Glyph="&#xE710;" />
+                        </Button>
+                    </StackPanel>
                 </ScrollViewer>
-                <Button
-                    Grid.Column="1"
-                    Width="34"
-                    Height="34"
-                    Margin="4,0,0,0"
-                    VerticalAlignment="Center"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Click="NewTabButton_Click"
-                    ToolTipService.ToolTip="新建标签页 (Ctrl+T)">
-                    <FontIcon FontSize="13" Glyph="&#xE710;" />
-                </Button>
 
             <Border Grid.Column="2" x:Name="CaptionSpacing" />
         </Grid>
 
-        <!-- ============ Row 1：导航 + 面包屑 + 搜索 ============ -->
+        <!-- ============ Row 1：导航 + 地址栏（搜索内嵌） ============ -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <StackPanel Grid.Column="0" Margin="8,0,0,0" Orientation="Horizontal" Spacing="2">
@@ -146,13 +165,11 @@
                 </Button>
             </StackPanel>
 
-            <!-- 面包屑药丸 -->
+            <!-- 地址栏药丸：主页 > 路径 | 编辑 | 搜索 -->
             <Border
                 Grid.Column="1"
                 Margin="8,7,8,7"
                 Background="{StaticResource FsheSurfaceBrush}"
-                BorderBrush="{StaticResource FsheStrokeBrush}"
-                BorderThickness="1"
                 CornerRadius="{StaticResource FsheRadiusPill}">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -160,227 +177,104 @@
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
+
                     <Button
                         Grid.Column="0"
-                        Width="36"
+                        Width="40"
                         Height="32"
                         Margin="2,0,0,0"
                         Background="Transparent"
                         BorderThickness="0"
                         Click="HomeButton_Click"
                         ToolTipService.ToolTip="主页">
-                        <FontIcon FontSize="15" Glyph="&#xE80F;" />
+                        <FontIcon FontSize="15" Foreground="#FFB900" Glyph="&#xE80F;" />
                     </Button>
-                    <Rectangle
-                        Grid.Column="1"
-                        Width="1"
-                        Height="16"
-                        Fill="{StaticResource FsheStrokeBrush}" />
-                    <Border Grid.Column="2" Margin="2,0,0,0" VerticalAlignment="Center" Height="28">
-                        <Grid>
-                            <BreadcrumbBar
-                                x:Name="PathBreadcrumb"
-                                VerticalAlignment="Center"
-                                ItemClicked="PathBreadcrumb_ItemClicked"
-                                Tapped="PathBreadcrumb_Tapped"
-                                RightTapped="PathBreadcrumb_RightTapped" />
-                            <TextBox
-                                x:Name="AddressEdit"
-                                VerticalAlignment="Center"
-                                BorderThickness="0"
-                                Background="Transparent"
-                                FontSize="13"
-                                KeyDown="AddressEdit_KeyDown"
-                                LostFocus="AddressEdit_LostFocus"
-                                Visibility="Collapsed" />
-                        </Grid>
-                    </Border>
+
                     <FontIcon
-                        Grid.Column="3"
-                        Margin="2,0,10,0"
+                        Grid.Column="1"
+                        Margin="0,0,2,0"
+                        VerticalAlignment="Center"
                         FontSize="9"
-                        Glyph="&#xE76C;"
-                        Opacity="0.6" />
+                        Foreground="{StaticResource FsheTextSecondaryBrush}"
+                        Glyph="&#xE76C;" />
+
+                    <Grid Grid.Column="2" Margin="2,0" VerticalAlignment="Center">
+                        <BreadcrumbBar
+                            x:Name="PathBreadcrumb"
+                            VerticalAlignment="Center"
+                            ItemClicked="PathBreadcrumb_ItemClicked"
+                            Tapped="PathBreadcrumb_Tapped"
+                            RightTapped="PathBreadcrumb_RightTapped" />
+                        <TextBox
+                            x:Name="AddressEdit"
+                            VerticalAlignment="Center"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            FontSize="13"
+                            KeyDown="AddressEdit_KeyDown"
+                            LostFocus="AddressEdit_LostFocus"
+                            Visibility="Collapsed" />
+                        <AutoSuggestBox
+                            x:Name="SearchBox"
+                            Height="30"
+                            VerticalAlignment="Center"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            CornerRadius="{StaticResource FsheRadiusSmall}"
+                            FontSize="13"
+                            PlaceholderText="搜索"
+                            QueryIcon="Find"
+                            Visibility="Collapsed"
+                            QuerySubmitted="SearchBox_QuerySubmitted"
+                            TextChanged="SearchBox_TextChanged"
+                            LostFocus="SearchBox_LostFocus" />
+                    </Grid>
+
+                    <Rectangle Grid.Column="3" Width="1" Height="16" Fill="{StaticResource FsheStrokeBrush}" />
+
+                    <Button
+                        Grid.Column="4"
+                        Width="34"
+                        Height="32"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="GoButton_Click"
+                        ToolTipService.ToolTip="编辑路径 (Ctrl+L)">
+                        <StackPanel VerticalAlignment="Center" Orientation="Horizontal" Spacing="2">
+                            <FontIcon FontSize="11" Glyph="&#xE76C;" />
+                            <Rectangle Width="1.2" Height="12" Fill="{StaticResource FsheTextBrush}" />
+                        </StackPanel>
+                    </Button>
+
+                    <Rectangle Grid.Column="5" Width="1" Height="16" Fill="{StaticResource FsheStrokeBrush}" />
+
+                    <Button
+                        x:Name="SearchToggleButton"
+                        Grid.Column="6"
+                        Width="40"
+                        Height="32"
+                        Margin="0,0,2,0"
+                        AutomationProperties.Name="搜索"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Click="SearchToggle_Click"
+                        ToolTipService.ToolTip="搜索 (Ctrl+F)">
+                        <FontIcon FontSize="14" Glyph="&#xE721;" />
+                    </Button>
                 </Grid>
             </Border>
-
-            <StackPanel Grid.Column="2" Margin="0,0,12,0" Orientation="Horizontal" Spacing="8">
-                <AutoSuggestBox
-                    x:Name="SearchBox"
-                    Width="220"
-                    VerticalAlignment="Center"
-                    CornerRadius="{StaticResource FsheRadiusPill}"
-                    PlaceholderText="搜索"
-                    QueryIcon="Find"
-                    Visibility="Collapsed"
-                    QuerySubmitted="SearchBox_QuerySubmitted"
-                    TextChanged="SearchBox_TextChanged"
-                    LostFocus="SearchBox_LostFocus" />
-                <Button
-                    x:Name="SearchToggleButton"
-                    Width="36"
-                    Height="34"
-                    AutomationProperties.Name="搜索"
-                    VerticalAlignment="Center"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Click="SearchToggle_Click"
-                    ToolTipService.ToolTip="搜索 (Ctrl+F)">
-                    <FontIcon FontSize="15" Glyph="&#xE721;" />
-                </Button>
-                <Border
-                    Width="22"
-                    Height="22"
-                    Margin="2,0,0,0"
-                    VerticalAlignment="Center"
-                    CornerRadius="11"
-                    Background="#3DBA4E"
-                    ToolTipService.ToolTip="一切就绪">
-                    <FontIcon FontSize="10" Foreground="White" Glyph="&#xE73E;" />
-                </Border>
-            </StackPanel>
         </Grid>
 
-        <!-- ============ Row 2：命令栏（与右侧卡片对齐） ============ -->
-        <Grid x:Name="CommandBarGrid" Grid.Row="2" Margin="241,0,12,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-
-            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="2">
-                <Button
-                    x:Name="NewButton"
-                    Height="34"
-                    Margin="2,0,10,0"
-                    Padding="12,0"
-                    VerticalAlignment="Center"
-                    Background="{StaticResource FsheSurfaceBrush}"
-                    BorderThickness="0"
-                    CornerRadius="{StaticResource FsheRadiusSmall}"
-                    Click="NewButton_Click">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon FontSize="15" Foreground="{StaticResource FsheAccentBrush}" Glyph="&#xE710;" />
-                        <TextBlock VerticalAlignment="Center" Text="新建" />
-                        <FontIcon FontSize="8" Glyph="&#xE70D;" Opacity="0.7" />
-                    </StackPanel>
-                    <Button.Flyout>
-                        <MenuFlyout>
-                            <MenuFlyoutItem Text="文件夹" Click="NewFolderItem_Click">
-                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8B7;" /></MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                            <MenuFlyoutItem Text="空白文件" Click="NewFileItem_Click">
-                                <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8A5;" /></MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                        </MenuFlyout>
-                    </Button.Flyout>
-                </Button>
-                <Button x:Name="CutButton" AutomationProperties.Name="剪切" Style="{StaticResource ToolIconButtonStyle}" Click="CutButton_Click" ToolTipService.ToolTip="剪切 (Ctrl+X)">
-                    <FontIcon FontSize="15" Glyph="&#xE8C6;" />
-                </Button>
-                <Button x:Name="CopyButton" AutomationProperties.Name="复制" Style="{StaticResource ToolIconButtonStyle}" Click="CopyButton_Click" ToolTipService.ToolTip="复制 (Ctrl+C)">
-                    <FontIcon FontSize="15" Glyph="&#xE8C8;" />
-                </Button>
-                <Button x:Name="PasteButton" AutomationProperties.Name="粘贴" Style="{StaticResource ToolIconButtonStyle}" Click="PasteButton_Click" ToolTipService.ToolTip="粘贴 (Ctrl+V)">
-                    <FontIcon FontSize="15" Glyph="&#xE77F;" />
-                </Button>
-                <Button x:Name="RenameButton" AutomationProperties.Name="重命名" Style="{StaticResource ToolIconButtonStyle}" Click="RenameButton_Click" ToolTipService.ToolTip="重命名 (F2)">
-                    <FontIcon FontSize="15" Glyph="&#xE70F;" />
-                </Button>
-                <Button x:Name="DeleteButton" AutomationProperties.Name="删除" Style="{StaticResource ToolIconButtonStyle}" Click="DeleteButton_Click" ToolTipService.ToolTip="删除 (Delete)">
-                    <FontIcon FontSize="15" Glyph="&#xE74D;" />
-                </Button>
-                <Button
-                    x:Name="TagButton"
-                    AutomationProperties.Name="设置标签"
-                    Style="{StaticResource ToolIconButtonStyle}"
-                    Click="TagButton_Click"
-                    ToolTipService.ToolTip="给选中项设置标签">
-                    <FontIcon FontSize="12" Glyph="&#x25C6;" />
-                </Button>
-            </StackPanel>
-
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
-                <Button
-                    AutomationProperties.Name="视图设置"
-                    Height="34"
-                    Padding="8,0"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    ToolTipService.ToolTip="视图设置">
-                    <FontIcon FontSize="14" Glyph="&#xE713;" />
-                    <Button.Flyout>
-                        <MenuFlyout>
-                            <MenuFlyoutItem Text="显示隐藏的项目" Click="ToggleHiddenItem_Click">
-                                <MenuFlyoutItem.Icon><FontIcon x:Name="HiddenItemIcon" Glyph="&#xE739;" Foreground="Transparent" /></MenuFlyoutItem.Icon>
-                            </MenuFlyoutItem>
-                        </MenuFlyout>
-                    </Button.Flyout>
-                </Button>
-                <Button AutomationProperties.Name="排序方式" Height="34" Padding="8,0" Background="Transparent" BorderThickness="0" Click="SortButton_Click">
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-                        <TextBlock x:Name="SortLetterText" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{StaticResource FsheAccentBrush}" Text="A" />
-                        <TextBlock x:Name="SortArrowText" VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource FsheAccentBrush}" Text="&#x2193;" />
-                        <FontIcon FontSize="8" Glyph="&#xE70D;" Opacity="0.7" />
-                    </StackPanel>
-                    <Button.Flyout>
-                        <MenuFlyout>
-                            <RadioMenuFlyoutItem x:Name="SortByName" Text="名称" IsChecked="True" Click="SortOption_Click" />
-                            <RadioMenuFlyoutItem x:Name="SortByDate" Text="修改日期" Click="SortOption_Click" />
-                            <RadioMenuFlyoutItem x:Name="SortByType" Text="类型" Click="SortOption_Click" />
-                            <RadioMenuFlyoutItem x:Name="SortBySize" Text="大小" Click="SortOption_Click" />
-                        </MenuFlyout>
-                    </Button.Flyout>
-                </Button>
-                <Button x:Name="SortDirectionButton" AutomationProperties.Name="升序或降序" Height="34" Padding="8,0" Background="Transparent" BorderThickness="0" Click="SortDirectionButton_Click">
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <TextBlock VerticalAlignment="Center" FontSize="14" Text="&#x21C5;" />
-                        <FontIcon FontSize="8" Glyph="&#xE70D;" Opacity="0.7" />
-                    </StackPanel>
-                </Button>
-                <Button AutomationProperties.Name="视图选项" Height="34" Padding="8,0" Background="Transparent" BorderThickness="0">
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <FontIcon FontSize="14" Glyph="&#xE8FD;" />
-                        <FontIcon FontSize="8" Glyph="&#xE70D;" Opacity="0.7" />
-                    </StackPanel>
-                    <Button.Flyout>
-                        <MenuFlyout>
-                            <RadioMenuFlyoutItem x:Name="ViewDetails" Text="详细信息" IsChecked="True" Click="ViewOption_Click" />
-                            <RadioMenuFlyoutItem x:Name="ViewList" Text="列表" Click="ViewOption_Click" />
-                            <RadioMenuFlyoutItem x:Name="ViewTiles" Text="大图标" Click="ViewOption_Click" />
-                        </MenuFlyout>
-                    </Button.Flyout>
-                </Button>
-                <Button
-                    x:Name="PreviewPaneButton"
-                    AutomationProperties.Name="预览窗格"
-                    Width="38"
-                    Height="30"
-                    Margin="6,0,0,0"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Click="PreviewToggle_Click"
-                    ToolTipService.ToolTip="预览窗格">
-                    <FontIcon FontSize="14" Glyph="&#xE923;" />
-                </Button>
-            </StackPanel>
-        </Grid>
-
-        <!-- ============ Row 3：侧边栏 + 内容 ============ -->
-        <Grid Grid.Row="3">
+        <!-- ============ Row 2：侧边栏 + 内容区（命令栏 + 卡片） ============ -->
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition x:Name="NavColumn" Width="240" />
-                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-
-            <Rectangle
-                Grid.Column="1"
-                Width="1"
-                Margin="0,8"
-                Fill="{StaticResource FsheStrokeBrush}"
-                Opacity="0.6" />
 
             <!-- 侧边栏 -->
             <Grid x:Name="SidebarRoot" Grid.Column="0">
@@ -530,6 +424,7 @@
 
                 <!-- 底部：设置 -->
                 <StackPanel Grid.Row="1" Margin="0,0,0,6">
+                    <Rectangle Height="1" Margin="8,0,12,4" Fill="{StaticResource FsheStrokeBrush}" Opacity="0.6" />
                     <primitives:ToggleButton x:Name="SettingsNav" Style="{StaticResource NavItemStyle}" Click="NavItem_Click" Tag="Settings">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -543,29 +438,190 @@
                 </StackPanel>
             </Grid>
 
-            <!-- 内容 Frame -->
-            <Frame x:Name="ContentFrame" Grid.Column="2" />
+            <!-- 内容列：命令栏 + 内容卡片 -->
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
 
-            <!-- 底部状态栏 -->
-            <Border
-                Grid.Column="2"
-                Height="34"
-                VerticalAlignment="Bottom"
-                BorderBrush="{StaticResource FsheStrokeBrush}"
-                BorderThickness="0,1,0,0"
-                Background="Transparent">
-                <StackPanel Margin="16,0,0,0" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
-                    <TextBlock x:Name="CountText" Style="{StaticResource CaptionTextBlockStyle}" Text="0 个项目" />
-                    <TextBlock x:Name="TotalSizeText" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" Text="" />
-                </StackPanel>
+                <!-- 命令栏（主页时隐藏） -->
+                <Grid x:Name="CommandBarGrid" Grid.Row="0" Height="44" Margin="8,0,8,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- 左组：新建 + 编辑工具 -->
+                    <Border
+                        Grid.Column="0"
+                        Padding="2"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Center"
+                        Background="{StaticResource FsheSurfaceBrush}"
+                        CornerRadius="8">
+                        <StackPanel Orientation="Horizontal">
+                            <Button
+                                x:Name="NewButton"
+                                Margin="0,0,2,0"
+                                VerticalAlignment="Center"
+                                Click="NewButton_Click"
+                                Style="{StaticResource NewCommandButtonStyle}">
+                                <StackPanel Orientation="Horizontal" Spacing="7">
+                                    <Grid Width="16" Height="16" VerticalAlignment="Center">
+                                        <Ellipse Width="15" Height="15" Stroke="{StaticResource FsheAccentBrush}" StrokeThickness="1.2" />
+                                        <Rectangle Width="7" Height="1.2" Fill="{StaticResource FsheAccentBrush}" RadiusX="0.6" RadiusY="0.6" />
+                                        <Rectangle Width="1.2" Height="7" Fill="{StaticResource FsheAccentBrush}" RadiusX="0.6" RadiusY="0.6" />
+                                    </Grid>
+                                    <TextBlock VerticalAlignment="Center" FontWeight="SemiBold" Text="新建" />
+                                    <FontIcon FontSize="8" Glyph="&#xE70D;" Opacity="0.7" />
+                                </StackPanel>
+                                <Button.Flyout>
+                                    <MenuFlyout>
+                                        <MenuFlyoutItem Text="文件夹" Click="NewFolderItem_Click">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8B7;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem Text="空白文件" Click="NewFileItem_Click">
+                                            <MenuFlyoutItem.Icon><FontIcon Glyph="&#xE8A5;" /></MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                            </Button>
+                            <Rectangle Width="1" Height="20" Margin="2,0" VerticalAlignment="Center" Fill="{StaticResource FsheStrokeBrush}" />
+                            <Button x:Name="CutButton" AutomationProperties.Name="剪切" Style="{StaticResource ToolIconButtonStyle}" Click="CutButton_Click" ToolTipService.ToolTip="剪切 (Ctrl+X)">
+                                <FontIcon FontSize="15" Glyph="&#xE8C6;" />
+                            </Button>
+                            <Button x:Name="CopyButton" AutomationProperties.Name="复制" Style="{StaticResource ToolIconButtonStyle}" Click="CopyButton_Click" ToolTipService.ToolTip="复制 (Ctrl+C)">
+                                <FontIcon FontSize="15" Glyph="&#xE8C8;" />
+                            </Button>
+                            <Button x:Name="PasteButton" AutomationProperties.Name="粘贴" Style="{StaticResource ToolIconButtonStyle}" Click="PasteButton_Click" ToolTipService.ToolTip="粘贴 (Ctrl+V)">
+                                <FontIcon FontSize="15" Glyph="&#xE77F;" />
+                            </Button>
+                            <Button x:Name="RenameButton" AutomationProperties.Name="重命名" Style="{StaticResource ToolIconButtonStyle}" Click="RenameButton_Click" ToolTipService.ToolTip="重命名 (F2)">
+                                <FontIcon FontSize="15" Glyph="&#xE70F;" />
+                            </Button>
+                            <Button x:Name="DeleteButton" AutomationProperties.Name="删除" Style="{StaticResource ToolIconButtonStyle}" Click="DeleteButton_Click" ToolTipService.ToolTip="删除 (Delete)">
+                                <FontIcon FontSize="15" Glyph="&#xE74D;" />
+                            </Button>
+                            <Button
+                                x:Name="TagButton"
+                                AutomationProperties.Name="设置标签"
+                                Style="{StaticResource ToolIconButtonStyle}"
+                                Click="TagButton_Click"
+                                ToolTipService.ToolTip="给选中项设置标签">
+                                <FontIcon FontSize="12" Glyph="&#x25C6;" />
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 右组：视图 / 排序 + 预览窗格 -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                        <Border Padding="2" Background="{StaticResource FsheSurfaceBrush}" CornerRadius="8">
+                            <StackPanel Orientation="Horizontal" Spacing="2">
+                                <Button
+                                    AutomationProperties.Name="视图设置"
+                                    Height="34"
+                                    Padding="8,0"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    ToolTipService.ToolTip="视图设置">
+                                    <FontIcon FontSize="14" Glyph="&#xE713;" />
+                                    <Button.Flyout>
+                                        <MenuFlyout>
+                                            <MenuFlyoutItem Text="显示隐藏的项目" Click="ToggleHiddenItem_Click">
+                                                <MenuFlyoutItem.Icon><FontIcon x:Name="HiddenItemIcon" Glyph="&#xE739;" Foreground="Transparent" /></MenuFlyoutItem.Icon>
+                                            </MenuFlyoutItem>
+                                        </MenuFlyout>
+                                    </Button.Flyout>
+                                </Button>
+                                <Button AutomationProperties.Name="排序方式" Height="34" Padding="8,0" Background="Transparent" BorderThickness="0" Click="SortButton_Click">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock x:Name="SortLetterText" VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{StaticResource FsheAccentBrush}" Text="A" />
+                                        <TextBlock x:Name="SortArrowText" VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource FsheAccentBrush}" Text="&#x2193;" />
+                                        <FontIcon FontSize="8" Glyph="&#xE70D;" Opacity="0.7" />
+                                    </StackPanel>
+                                    <Button.Flyout>
+                                        <MenuFlyout>
+                                            <RadioMenuFlyoutItem x:Name="SortByName" Text="名称" IsChecked="True" Click="SortOption_Click" />
+                                            <RadioMenuFlyoutItem x:Name="SortByDate" Text="修改日期" Click="SortOption_Click" />
+                                            <RadioMenuFlyoutItem x:Name="SortByType" Text="类型" Click="SortOption_Click" />
+                                            <RadioMenuFlyoutItem x:Name="SortBySize" Text="大小" Click="SortOption_Click" />
+                                        </MenuFlyout>
+                                    </Button.Flyout>
+                                </Button>
+                                <Button x:Name="SortDirectionButton" AutomationProperties.Name="升序或降序" Height="34" Padding="8,0" Background="Transparent" BorderThickness="0" Click="SortDirectionButton_Click">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <TextBlock VerticalAlignment="Center" FontSize="14" Text="&#x21C5;" />
+                                        <FontIcon FontSize="8" Glyph="&#xE70D;" Opacity="0.7" />
+                                    </StackPanel>
+                                </Button>
+                                <Button AutomationProperties.Name="视图选项" Height="34" Padding="8,0" Background="Transparent" BorderThickness="0">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <FontIcon FontSize="14" Glyph="&#xE8FD;" />
+                                        <FontIcon FontSize="8" Glyph="&#xE70D;" Opacity="0.7" />
+                                    </StackPanel>
+                                    <Button.Flyout>
+                                        <MenuFlyout>
+                                            <RadioMenuFlyoutItem x:Name="ViewDetails" Text="详细信息" IsChecked="True" Click="ViewOption_Click" />
+                                            <RadioMenuFlyoutItem x:Name="ViewList" Text="列表" Click="ViewOption_Click" />
+                                            <RadioMenuFlyoutItem x:Name="ViewTiles" Text="大图标" Click="ViewOption_Click" />
+                                        </MenuFlyout>
+                                    </Button.Flyout>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                        <Button
+                            x:Name="PreviewPaneButton"
+                            AutomationProperties.Name="预览窗格"
+                            Width="38"
+                            Height="34"
+                            Margin="4,0,0,0"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Click="PreviewToggle_Click"
+                            ToolTipService.ToolTip="预览窗格">
+                            <FontIcon FontSize="14" Glyph="&#xE923;" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <!-- 内容卡片（Files 风格：圆角 + 细边框 + 微亮背景） -->
+                <Border
+                    Grid.Row="1"
+                    Margin="0,2,8,8"
+                    Background="{StaticResource FsheCardBrush}"
+                    BorderBrush="{StaticResource FsheStrokeBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Frame x:Name="ContentFrame" Grid.Row="0" />
+
+                    <!-- 底部状态栏（卡片内） -->
+                    <Border
+                        Grid.Row="1"
+                        Height="34"
+                        BorderBrush="{StaticResource FsheStrokeBrush}"
+                        BorderThickness="0,1,0,0"
+                        Background="Transparent">
+                        <StackPanel Margin="16,0,0,0" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                            <TextBlock x:Name="CountText" Style="{StaticResource CaptionTextBlockStyle}" Text="0 个项目" />
+                            <TextBlock x:Name="TotalSizeText" Style="{StaticResource CaptionTextBlockStyle}" Opacity="0.7" Text="" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
             </Border>
 
             <!-- 预览窗格（浮于内容卡片右侧） -->
             <Border
                 x:Name="PreviewPane"
-                Grid.Column="2"
+                Grid.Row="1"
                 Width="280"
-                Margin="0,8,12,42"
+                Margin="0,10,16,50"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Stretch"
                 Background="{StaticResource FsheSurfaceBrush}"
@@ -601,6 +657,7 @@
                     </StackPanel>
                 </ScrollViewer>
             </Border>
+            </Grid>
         </Grid>
     </Grid>
 </Window>

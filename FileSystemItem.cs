@@ -53,6 +53,21 @@ internal static class ShellIconHelper
         return img ?? DefaultFileIcon();
     }
 
+    /// <summary>提取驱动器根目录的真实图标（硬盘/USB 盘各自的原生图标）。根路径不能走 Extract 的目录分支。</summary>
+    public static BitmapImage GetDriveIcon(string rootPath)
+    {
+        var key = "::DRIVE:" + rootPath.ToUpperInvariant();
+        if (_cache.TryGetValue(key, out var cached)) return cached;
+
+        SHFILEINFO info = default;
+        var hIcon = SHGetFileInfo(rootPath, 0, ref info, (uint)Marshal.SizeOf(info), SHGFI_ICON);
+        BitmapImage? img = null;
+        if (hIcon != IntPtr.Zero && info.hIcon != IntPtr.Zero) img = ConvertAndFree(info.hIcon);
+        img ??= GetFolderIcon();
+        _cache[key] = img;
+        return img;
+    }
+
     public static BitmapImage GetFileIcon(string path)
     {
         var ext = Path.GetExtension(path);
@@ -139,6 +154,137 @@ internal static class ShellIconHelper
     }
 }
 
+/// <summary>回收站（Shell 命名空间 ssfBITBUCKET=10）枚举与操作：晚绑定 Shell.Application COM。</summary>
+internal static class RecycleBinHelper
+{
+    public sealed record RecycleEntry(
+        string Name,
+        string PhysicalPath,
+        bool IsFolder,
+        long Size,
+        string Type,
+        DateTime? DeletedDate,
+        string DeletedFrom);
+
+    private const int SsfBitBucket = 10;
+    private const uint SHERB_NOCONFIRMATION = 0x1;
+    private const uint SHERB_NOPROGRESSUI = 0x2;
+    private const uint SHERB_NOSOUND = 0x4;
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern uint SHEmptyRecycleBin(IntPtr hwnd, string? pszRootPath, uint dwFlags);
+
+    /// <summary>枚举回收站全部条目（PhysicalPath 指向 $R... 真实数据，可供取图标/打开/计算大小）。</summary>
+    public static List<RecycleEntry> Enumerate()
+    {
+        var list = new List<RecycleEntry>();
+        var shellType = Type.GetTypeFromProgID("Shell.Application");
+        if (shellType == null) return list;
+        try
+        {
+            dynamic shell = Activator.CreateInstance(shellType)!;
+            dynamic folder = shell.NameSpace(SsfBitBucket);
+            if (folder == null) return list;
+            foreach (dynamic item in folder.Items())
+            {
+                try
+                {
+                    string path = (string)item.Path;
+                    if (string.IsNullOrEmpty(path)) continue;
+                    long size = 0;
+                    try { size = Convert.ToInt64(item.Size); } catch { /* 文件夹可能无大小 */ }
+                    list.Add(new RecycleEntry(
+                        (string)item.Name,
+                        path,
+                        (bool)item.IsFolder,
+                        size,
+                        item.Type as string ?? string.Empty,
+                        ReadDate(item, "System.Recycle.DateDeleted"),
+                        ReadString(item, "System.Recycle.DeletedFrom")));
+                }
+                catch { /* 跳过无法读取的条目 */ }
+            }
+        }
+        catch { /* Shell 不可用时返回空列表 */ }
+        return list;
+    }
+
+    /// <summary>清空所有驱动器的回收站（无确认、无进度条、无声）。</summary>
+    public static void Empty() => SHEmptyRecycleBin(IntPtr.Zero, null,
+        SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND);
+
+    /// <summary>对回收站条目执行 Shell 动词（永久删除/还原），按物理 $R 路径匹配。</summary>
+    public static void InvokeVerb(IEnumerable<string> physicalPaths, string canonicalVerb, params string[] localizedVerbs)
+    {
+        var targets = new HashSet<string>(physicalPaths, StringComparer.OrdinalIgnoreCase);
+        if (targets.Count == 0) return;
+
+        var shellType = Type.GetTypeFromProgID("Shell.Application");
+        if (shellType == null) return;
+        try
+        {
+            dynamic shell = Activator.CreateInstance(shellType)!;
+            dynamic folder = shell.NameSpace(SsfBitBucket);
+            if (folder == null) return;
+
+            // 先收集 COM 对象，不能边枚举边删除（集合会变化）
+            var matched = new List<dynamic>();
+            foreach (dynamic item in folder.Items())
+            {
+                try { if (targets.Contains((string)item.Path)) matched.Add(item); }
+                catch { /* 忽略 */ }
+            }
+            foreach (var item in matched) DoVerb(item, canonicalVerb, localizedVerbs);
+        }
+        catch { /* Shell 操作失败忽略 */ }
+    }
+
+    private static void DoVerb(dynamic item, string canonicalVerb, string[] localizedVerbs)
+    {
+        // 规范动词（delete 等）与语言无关；restore 不一定支持，失败再按本地化名称匹配
+        try { item.InvokeVerb(canonicalVerb); return; }
+        catch { /* 继续尝试本地化动词 */ }
+
+        try
+        {
+            foreach (dynamic verb in item.Verbs())
+            {
+                var raw = ((string)verb.Name).Replace("&", string.Empty);
+                var paren = raw.IndexOf('(');
+                var name = (paren >= 0 ? raw[..paren] : raw).Trim();
+                if (string.Equals(name, canonicalVerb, StringComparison.OrdinalIgnoreCase) ||
+                    localizedVerbs.Any(v => string.Equals(name, v, StringComparison.OrdinalIgnoreCase)))
+                {
+                    verb.DoIt();
+                    return;
+                }
+            }
+        }
+        catch { /* 忽略动词枚举失败 */ }
+    }
+
+    private static string ReadString(dynamic item, string propName)
+    {
+        try { return item.ExtendedProperty(propName) as string ?? string.Empty; }
+        catch { return string.Empty; }
+    }
+
+    private static DateTime? ReadDate(dynamic item, string propName)
+    {
+        try
+        {
+            var value = item.ExtendedProperty(propName);
+            return value switch
+            {
+                DateTime dt => dt,
+                string s when DateTime.TryParse(s, out var parsed) => parsed,
+                _ => null,
+            };
+        }
+        catch { return null; }
+    }
+}
+
 /// <summary>
 /// 文件系统中单个条目的视图模型（文件或文件夹）。
 /// </summary>
@@ -167,6 +313,12 @@ public class FileSystemItem : INotifyPropertyChanged
         }
     }
     public string TypeDisplay { get; set; } = string.Empty;
+
+    /// <summary>是否为回收站中的条目（FullPath 此时是 $R 物理路径，而非原始位置）。</summary>
+    public bool IsRecycleItem { get; set; }
+
+    /// <summary>回收站条目的原始所在目录（System.Recycle.DeletedFrom）。</summary>
+    public string OriginalLocation { get; set; } = string.Empty;
 
     /// <summary>Windows 系统真实图标（从 SHGetFileInfo 提取，已缓存）。</summary>
     public ImageSource IconSource { get; set; }
@@ -229,8 +381,33 @@ public class FileSystemItem : INotifyPropertyChanged
         };
     }
 
+    /// <summary>回收站条目：名称为原始文件名，路径为 $R 物理数据路径，日期取删除时间。</summary>
+    internal static FileSystemItem FromRecycleEntry(RecycleBinHelper.RecycleEntry entry)
+    {
+        var item = new FileSystemItem
+        {
+            Name = entry.Name,
+            FullPath = entry.PhysicalPath,
+            IsDirectory = entry.IsFolder,
+            DateModified = entry.DeletedDate is { } d ? FormatRelativeTime(d) : string.Empty,
+            TypeDisplay = string.IsNullOrWhiteSpace(entry.Type)
+                ? (entry.IsFolder ? "文件夹" : "文件")
+                : entry.Type,
+            IconSource = entry.IsFolder
+                ? ShellIconHelper.GetFolderIcon()
+                : ShellIconHelper.GetFileIcon(entry.PhysicalPath),
+            IsRecycleItem = true,
+            OriginalLocation = entry.DeletedFrom ?? string.Empty,
+        };
+        if (entry.IsFolder)
+            item.SizeDisplay = entry.Size > 0 ? FormatBytes(entry.Size) : "View size";
+        else
+            item.SizeDisplay = FormatSize(entry.Size);
+        return item;
+    }
+
     /// <summary>相对时间：刚刚 / N 分钟前 / N 小时前 / N 天前 / 中文日期。</summary>
-    private static string FormatRelativeTime(DateTime time)
+    public static string FormatRelativeTime(DateTime time)
     {
         var delta = DateTime.Now - time;
         if (delta.TotalSeconds < 60) return "刚刚";

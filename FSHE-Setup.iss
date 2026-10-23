@@ -2,7 +2,7 @@
 ; 在仓库根目录下用 ISCC 编译本脚本，源文件取自 installer_src\
 
 #define MyAppName "FSHE"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "YG-0"
 #define MyAppExeName "FSHE.exe"
 #define MyAppSourceDir "installer_src"

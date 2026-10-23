@@ -14,6 +14,9 @@
     <Color x:Key="FsheAccentColor">#4CC2FF</Color>
     <Color x:Key="FsheTextColor">#F2F2F2</Color>
     <Color x:Key="FsheTextSecondaryColor">#9B9B9B</Color>
+    <Color x:Key="FsheCardColor">#2B2B2B</Color>
+    <Color x:Key="FsheTabSelectedColor">#383838</Color>
+    <Color x:Key="FsheTabHoverColor">#2F2F2F</Color>
 
     <SolidColorBrush x:Key="FsheWindowBrush" Color="{StaticResource FsheWindowColor}" />
     <SolidColorBrush x:Key="FsheSurfaceBrush" Color="{StaticResource FsheSurfaceColor}" />
@@ -24,6 +27,9 @@
     <SolidColorBrush x:Key="FsheAccentBrush" Color="{StaticResource FsheAccentColor}" />
     <SolidColorBrush x:Key="FsheTextBrush" Color="{StaticResource FsheTextColor}" />
     <SolidColorBrush x:Key="FsheTextSecondaryBrush" Color="{StaticResource FsheTextSecondaryColor}" />
+    <SolidColorBrush x:Key="FsheCardBrush" Color="{StaticResource FsheCardColor}" />
+    <SolidColorBrush x:Key="FsheTabSelectedBrush" Color="{StaticResource FsheTabSelectedColor}" />
+    <SolidColorBrush x:Key="FsheTabHoverBrush" Color="{StaticResource FsheTabHoverColor}" />
 
     <!-- ===== 圆角 ===== -->
     <CornerRadius x:Key="FsheRadiusSmall">6</CornerRadius>
@@ -67,7 +73,25 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="primitives:ToggleButton">
-                    <Border x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                    <Grid>
+                        <Border x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}" />
+                        </Border>
+                        <!-- Files 风格：选中项左侧竖向强调条 -->
+                        <Border
+                            x:Name="SelectionIndicator"
+                            Width="3"
+                            Height="18"
+                            Margin="1,0,0,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Background="{StaticResource FsheAccentBrush}"
+                            CornerRadius="1.5"
+                            Visibility="Collapsed" />
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal" />
@@ -83,23 +107,20 @@
                                 </VisualState>
                                 <VisualState x:Name="Checked">
                                     <VisualState.Setters>
-                                        <Setter Target="Root.Background" Value="{StaticResource FshePinSelectedBrush}" />
+                                        <Setter Target="Root.Background" Value="{StaticResource FsheNavSelectedBrush}" />
+                                        <Setter Target="SelectionIndicator.Visibility" Value="Visible" />
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="CheckedPointerOver">
                                     <VisualState.Setters>
-                                        <Setter Target="Root.Background" Value="{StaticResource FshePinSelectedBrush}" />
+                                        <Setter Target="Root.Background" Value="{StaticResource FsheNavSelectedBrush}" />
+                                        <Setter Target="SelectionIndicator.Visibility" Value="Visible" />
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Disabled" />
                             </VisualStateGroup>
                         </VisualStateManager.VisualStateGroups>
-                        <ContentPresenter
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Content="{TemplateBinding Content}"
-                            ContentTemplate="{TemplateBinding ContentTemplate}" />
-                    </Border>
+                    </Grid>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -156,6 +177,57 @@
         </Setter>
     </Style>
 
+    <!-- ===== 命令栏主按钮（新建）：透明底，悬停浅灰 ===== -->
+    <Style x:Key="NewCommandButtonStyle" TargetType="Button">
+        <Setter Property="Height" Value="34" />
+        <Setter Property="Padding" Value="10,0,12,0" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource FsheTextBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="{StaticResource FsheRadiusSmall}" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border
+                        x:Name="Root"
+                        Padding="{TemplateBinding Padding}"
+                        Background="{TemplateBinding Background}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                        <ContentPresenter
+                            HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Foreground="{TemplateBinding Foreground}" />
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{StaticResource FsheHoverBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{StaticResource FsheStrokeBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Opacity" Value="0.45" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ===== 文件列表行 ===== -->
     <Style x:Key="FileRowStyle" TargetType="ListViewItem">
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -178,6 +250,21 @@
                                 <VisualState x:Name="Pressed">
                                     <VisualState.Setters>
                                         <Setter Target="Root.Background" Value="{StaticResource FsheStrokeBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Selected">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{StaticResource FshePinSelectedBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="PointerOverSelected">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{StaticResource FshePinSelectedBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="PressedSelected">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{StaticResource FshePinSelectedBrush}" />
                                     </VisualState.Setters>
                                 </VisualState>
                             </VisualStateGroup>

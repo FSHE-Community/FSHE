@@ -66,6 +66,7 @@ public sealed partial class FileExplorerPage : Page
     private readonly HashSet<string> _folderSizeRequested = new();
     private string _searchQuery = string.Empty;
     private string? _tagFilter;
+    private bool _isRecycleBin;
 
     private enum ViewMode { Details, List, Tiles }
 
@@ -146,16 +147,53 @@ public sealed partial class FileExplorerPage : Page
         _currentPath = "::NETWORK";
     }
 
+    private int _loadVersion;
+
+    private async void LoadRecycleBin()
+    {
+        var version = _loadVersion;
+        // 回收站可能有上千条目，COM 枚举放后台线程，避免阻塞 UI
+        var entries = await Task.Run(RecycleBinHelper.Enumerate);
+        if (version != _loadVersion) return; // 加载期间已导航到别处
+
+        foreach (var entry in entries)
+        {
+            try
+            {
+                var item = FileSystemItem.FromRecycleEntry(entry);
+                item.PropertyChanged += Item_PropertyChanged;
+                _allItems.Add(item);
+            }
+            catch { /* 跳过无法转换的条目 */ }
+        }
+
+        ApplySort();
+        foreach (var item in _allItems) Items.Add(item);
+
+        SelectAllBox.IsChecked = false;
+        UpdateEmptyState(string.Empty);
+        RaiseCount();
+        _currentPath = "::RECYCLE";
+        PreviewItemChanged?.Invoke(this, null);
+    }
+
     private void LoadDirectory(string path)
     {
+        _loadVersion++;
         Items.Clear();
         _allItems.Clear();
         _folderSizeRequested.Clear();
         _searchQuery = string.Empty;
         _tagFilter = null;
+        _isRecycleBin = path == "::RECYCLE";
+        RecycleToolBar.Visibility = _isRecycleBin ? Visibility.Visible : Visibility.Collapsed;
+        DateHeaderText.Text = _isRecycleBin ? "删除日期" : "修改日期";
+        EmptyStateTitle.Text = _isRecycleBin ? "回收站是空的" : "此文件夹是空的";
 
         // 虚拟路径：::NETWORK → 渲染已连接网络 + 映射盘 + 本地盘符
         if (path == "::NETWORK") { LoadNetworkView(); return; }
+        // 虚拟路径：::RECYCLE → Shell 回收站内容
+        if (path == "::RECYCLE") { LoadRecycleBin(); return; }
 
         try
         {
@@ -356,6 +394,7 @@ public sealed partial class FileExplorerPage : Page
     /// <summary>给所有勾选项目打标签（tag 为 null/空 = 清除），并立即持久化。</summary>
     public void SetTagForSelected(string? tag)
     {
+        if (_isRecycleBin) return;
         var selected = GetSelected();
         if (selected.Count == 0) return;
         foreach (var item in selected)
@@ -424,6 +463,8 @@ public sealed partial class FileExplorerPage : Page
     private void OpenItem(FileSystemItem item)
     {
         PreviewItemChanged?.Invoke(this, item);
+        // 回收站条目（文件或文件夹）都用 $R 物理路径交给 Shell 打开，不做应用内导航
+        if (_isRecycleBin) { OpenPath(item.FullPath); return; }
         if (item.IsDirectory) NavigationRequested?.Invoke(this, item.FullPath);
         else OpenPath(item.FullPath);
     }
@@ -470,6 +511,7 @@ public sealed partial class FileExplorerPage : Page
 
     public async Task NewFolderAsync()
     {
+        if (_isRecycleBin) return;
         var name = await PromptAsync("新建文件夹", "输入文件夹名称：", "新建文件夹");
         if (string.IsNullOrWhiteSpace(name)) return;
         try
@@ -483,6 +525,7 @@ public sealed partial class FileExplorerPage : Page
 
     public async Task NewFileAsync()
     {
+        if (_isRecycleBin) return;
         var name = await PromptAsync("新建文件", "输入文件名称：", "新建文本文档.txt");
         if (string.IsNullOrWhiteSpace(name)) return;
         try
@@ -527,6 +570,7 @@ public sealed partial class FileExplorerPage : Page
 
     public Task PasteAsync()
     {
+        if (_isRecycleBin) return Task.CompletedTask;
         if (_clipboardPaths == null || _clipboardPaths.Count == 0) return Task.CompletedTask;
 
         foreach (var src in _clipboardPaths.ToList())
@@ -560,6 +604,16 @@ public sealed partial class FileExplorerPage : Page
     {
         var selected = GetSelected();
         if (selected.Count == 0) return;
+
+        // 回收站里删除 = 永久删除（走 Shell 动词，由系统连带 $I 元数据一起清掉）
+        if (_isRecycleBin)
+        {
+            var paths = selected.Select(i => i.FullPath).ToList();
+            await Task.Run(() => RecycleBinHelper.InvokeVerb(paths, "delete", "删除"));
+            Refresh();
+            return;
+        }
+
         foreach (var item in selected)
         {
             try
@@ -577,6 +631,7 @@ public sealed partial class FileExplorerPage : Page
 
     public async Task RenameSelectedAsync()
     {
+        if (_isRecycleBin) return;
         var selected = GetSelected();
         if (selected.Count != 1) return;
         var item = selected[0];
@@ -590,6 +645,34 @@ public sealed partial class FileExplorerPage : Page
             Refresh();
         }
         catch { /* 忽略重命名失败 */ }
+    }
+
+    // ================== 回收站操作 ==================
+
+    private async void RestoreButton_Click(object sender, RoutedEventArgs e)
+    {
+        var selected = GetSelected();
+        if (selected.Count == 0) return;
+        var paths = selected.Select(i => i.FullPath).ToList();
+        await Task.Run(() => RecycleBinHelper.InvokeVerb(paths, "restore", "还原"));
+        Refresh();
+    }
+
+    private async void EmptyBinButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_allItems.Count == 0) return;
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = "清空回收站",
+            Content = "确定要永久删除回收站中的所有项目吗？此操作无法撤销。",
+            PrimaryButtonText = "清空回收站",
+            CloseButtonText = "取消",
+            DefaultButton = ContentDialogButton.Close,
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+        await Task.Run(() => RecycleBinHelper.Empty());
+        Refresh();
     }
 
     private async Task<string?> PromptAsync(string title, string message, string defaultValue)
