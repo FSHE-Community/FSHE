@@ -3,11 +3,16 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Net.NetworkInformation;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Microsoft.VisualBasic.FileIO;
+using Windows.Foundation;
+using Windows.System;
 
 namespace FSHE;
 
@@ -68,6 +73,19 @@ public sealed partial class FileExplorerPage : Page
     private string? _tagFilter;
     private bool _isRecycleBin;
 
+    // 框选（左键在空白处拖拽出蓝色选框）
+    private const double MarqueeDragThreshold = 4;
+    private bool _marqueeArmed;
+    private bool _marqueeDragging;
+    private bool _marqueeAdditive;
+    private bool _marqueeLogged;
+    private uint _marqueePointerId;
+    private Point _marqueeOrigin;
+    private Point _marqueePointer;
+    private Rect _marqueeBounds;
+    private ScrollViewer? _marqueeScrollViewer;
+    private DispatcherTimer? _marqueeScrollTimer;
+
     private enum ViewMode { Details, List, Tiles }
 
     public FileExplorerPage()
@@ -77,6 +95,12 @@ public sealed partial class FileExplorerPage : Page
         SimpleList.ItemsSource = Items;
         ItemsGrid.ItemsSource = Items;
         SetView(ViewMode.Details);
+
+        // ListView / GridView 会把指针事件标记为已处理，必须用 handledEventsToo 才能收到
+        ContentHost.AddHandler(PointerPressedEvent, new PointerEventHandler(ContentHost_PointerPressed), true);
+        ContentHost.AddHandler(PointerMovedEvent, new PointerEventHandler(ContentHost_PointerMoved), true);
+        ContentHost.AddHandler(PointerReleasedEvent, new PointerEventHandler(ContentHost_PointerReleased), true);
+        ContentHost.AddHandler(PointerCaptureLostEvent, new PointerEventHandler(ContentHost_PointerCaptureLost), true);
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -451,6 +475,267 @@ public sealed partial class FileExplorerPage : Page
             if (gv.SelectedItem is FileSystemItem sel) PreviewItemChanged?.Invoke(this, sel);
             else PreviewItemChanged?.Invoke(this, null);
         }
+    }
+
+    // ================== 框选（Lasso / Marquee） ==================
+
+    private ListViewBase CurrentList => _mode switch
+    {
+        ViewMode.List => SimpleList,
+        ViewMode.Tiles => ItemsGrid,
+        _ => DetailsList,
+    };
+
+    private void ContentHost_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        if (_marqueeArmed) return;
+
+        var point = e.GetCurrentPoint(ContentHost);
+        // 只处理鼠标左键；触摸/触控笔交给 ScrollViewer 自己滚动
+        if (point.PointerDeviceType != PointerDeviceType.Mouse ||
+            !point.Properties.IsLeftButtonPressed) return;
+
+        // 从列表项、滚动条、按钮上按下时，交给控件自身处理
+        if (IsInteractiveElement(e.OriginalSource as DependencyObject)) return;
+
+        _marqueeArmed = true;
+        _marqueeDragging = false;
+        _marqueeAdditive = (e.KeyModifiers & VirtualKeyModifiers.Control) != 0;
+        _marqueePointerId = e.Pointer.PointerId;
+        _marqueeOrigin = point.Position;
+        _marqueePointer = point.Position;
+        ContentHost.CapturePointer(e.Pointer);
+    }
+
+    private void ContentHost_PointerMoved(object sender, PointerRoutedEventArgs e)
+    {
+        if (!_marqueeArmed || e.Pointer.PointerId != _marqueePointerId) return;
+
+        var position = e.GetCurrentPoint(ContentHost).Position;
+        if (!_marqueeDragging)
+        {
+            if (Math.Abs(position.X - _marqueeOrigin.X) < MarqueeDragThreshold &&
+                Math.Abs(position.Y - _marqueeOrigin.Y) < MarqueeDragThreshold) return;
+
+            _marqueeDragging = true;
+            _marqueeLogged = false;
+            MarqueeCanvas.Visibility = Visibility.Visible;
+            // 未按 Ctrl 时，拖拽一开始就清空原有选择，和资源管理器一致
+            if (!_marqueeAdditive) CurrentList.SelectedItems.Clear();
+            StartMarqueeAutoScroll();
+        }
+
+        UpdateMarquee(position);
+    }
+
+    private void ContentHost_PointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        if (!_marqueeArmed || e.Pointer.PointerId != _marqueePointerId) return;
+
+        var dragged = _marqueeDragging;
+        EndMarquee();
+        ContentHost.ReleasePointerCapture(e.Pointer);
+
+        if (dragged)
+        {
+            LogMarquee($"done view={_mode} selected={CurrentList.SelectedItems.Count} " +
+                       $"modelSelected={_allItems.Count(i => i.IsSelected)}");
+        }
+
+        // 空白处单击（没有拖出选框）：清空选择
+        if (!dragged && CurrentList.SelectedItems.Count > 0)
+        {
+            CurrentList.SelectedItems.Clear();
+            PreviewItemChanged?.Invoke(this, null);
+        }
+    }
+
+    private void ContentHost_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
+    {
+        if (_marqueeArmed) EndMarquee();
+    }
+
+    private void UpdateMarquee(Point pointer)
+    {
+        _marqueePointer = pointer;
+
+        // 限制在内容区内，避免选框画到命令栏上
+        var x1 = Math.Clamp(_marqueeOrigin.X, 0, ContentHost.ActualWidth);
+        var y1 = Math.Clamp(_marqueeOrigin.Y, 0, ContentHost.ActualHeight);
+        var x2 = Math.Clamp(pointer.X, 0, ContentHost.ActualWidth);
+        var y2 = Math.Clamp(pointer.Y, 0, ContentHost.ActualHeight);
+
+        _marqueeBounds = new Rect(
+            Math.Min(x1, x2),
+            Math.Min(y1, y2),
+            Math.Abs(x1 - x2),
+            Math.Abs(y1 - y2));
+
+        Canvas.SetLeft(MarqueeRect, _marqueeBounds.X);
+        Canvas.SetTop(MarqueeRect, _marqueeBounds.Y);
+        MarqueeRect.Width = _marqueeBounds.Width;
+        MarqueeRect.Height = _marqueeBounds.Height;
+
+        ApplyMarqueeSelection();
+    }
+
+    /// <summary>把与选框相交的已实现容器加入选择（按住 Ctrl 时保留原有选择）。</summary>
+    private void ApplyMarqueeSelection()
+    {
+        if (!_marqueeDragging) return;
+
+        var list = CurrentList;
+        var hitCount = 0;
+        var containerCount = 0;
+
+        foreach (var container in EnumerateItemContainers(list))
+        {
+            containerCount++;
+            var item = ResolveItem(list, container);
+            if (item is null) continue;
+
+            var bounds = container
+                .TransformToVisual(ContentHost)
+                .TransformBounds(new Rect(0, 0, container.ActualWidth, container.ActualHeight));
+
+            var isSelected = list.SelectedItems.Contains(item);
+            if (Intersects(_marqueeBounds, bounds))
+            {
+                hitCount++;
+                if (!isSelected)
+                {
+                    list.SelectedItems.Add(item);
+                    item.IsSelected = true;
+                }
+            }
+            else if (!_marqueeAdditive && isSelected)
+            {
+                list.SelectedItems.Remove(item);
+                item.IsSelected = false;
+            }
+        }
+
+        // 诊断日志：每次拖拽只写一行，便于排查框选命中问题
+        if (!_marqueeLogged)
+        {
+            _marqueeLogged = true;
+            LogMarquee($"view={_mode} containers={containerCount} hits={hitCount} " +
+                       $"rect={_marqueeBounds.X:F0},{_marqueeBounds.Y:F0} {_marqueeBounds.Width:F0}x{_marqueeBounds.Height:F0}");
+        }
+    }
+
+    /// <summary>递归找出列表里已实现的每一项容器（ListViewItem / GridViewItem）。</summary>
+    private static IEnumerable<FrameworkElement> EnumerateItemContainers(DependencyObject root)
+    {
+        var count = VisualTreeHelper.GetChildrenCount(root);
+        for (var i = 0; i < count; i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is ListViewItem or GridViewItem)
+            {
+                yield return (FrameworkElement)child;
+                continue;
+            }
+
+            foreach (var nested in EnumerateItemContainers(child))
+                yield return nested;
+        }
+    }
+
+    private static FileSystemItem? ResolveItem(ListViewBase list, FrameworkElement container)
+    {
+        if (container.DataContext is FileSystemItem direct) return direct;
+        try { return list.ItemFromContainer(container) as FileSystemItem; }
+        catch { return null; }
+    }
+
+    private static void LogMarquee(string message)
+    {
+        try
+        {
+            File.AppendAllText(
+                Path.Combine(Path.GetTempPath(), "fshe-marquee.log"),
+                $"{DateTime.Now:HH:mm:ss.fff} {message}{Environment.NewLine}");
+        }
+        catch { /* 日志失败不影响功能 */ }
+    }
+
+    private static bool Intersects(Rect a, Rect b)
+        => a.X < b.X + b.Width && b.X < a.X + a.Width &&
+           a.Y < b.Y + b.Height && b.Y < a.Y + a.Height;
+
+    private void StartMarqueeAutoScroll()
+    {
+        _marqueeScrollViewer = FindScrollViewer(CurrentList);
+        if (_marqueeScrollViewer is null) return;
+
+        _marqueeScrollTimer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(30) };
+        _marqueeScrollTimer.Tick -= MarqueeAutoScroll_Tick;
+        _marqueeScrollTimer.Tick += MarqueeAutoScroll_Tick;
+        _marqueeScrollTimer.Start();
+    }
+
+    private void StopMarqueeAutoScroll()
+    {
+        _marqueeScrollTimer?.Stop();
+        _marqueeScrollViewer = null;
+    }
+
+    /// <summary>拖到内容区上下边缘附近时自动滚动，边滚边重新计算命中。</summary>
+    private void MarqueeAutoScroll_Tick(object? sender, object e)
+    {
+        var viewer = _marqueeScrollViewer;
+        if (!_marqueeDragging || viewer is null) return;
+
+        const double edge = 36;
+        const double maxStep = 26;
+        var y = _marqueePointer.Y;
+        double delta = 0;
+        if (y < edge)
+            delta = -maxStep * Math.Clamp((edge - y) / edge, 0, 1);
+        else if (y > viewer.ViewportHeight - edge)
+            delta = maxStep * Math.Clamp((y - (viewer.ViewportHeight - edge)) / edge, 0, 1);
+
+        if (Math.Abs(delta) < 0.5) return;
+
+        var target = Math.Clamp(viewer.VerticalOffset + delta, 0, viewer.ScrollableHeight);
+        if (Math.Abs(target - viewer.VerticalOffset) < 0.5) return;
+
+        viewer.ChangeView(null, target, null, true);
+        ApplyMarqueeSelection();
+    }
+
+    private void EndMarquee()
+    {
+        _marqueeArmed = false;
+        _marqueeDragging = false;
+        StopMarqueeAutoScroll();
+        MarqueeCanvas.Visibility = Visibility.Collapsed;
+        MarqueeRect.Width = 0;
+        MarqueeRect.Height = 0;
+    }
+
+    /// <summary>判断按下点是否落在列表项、滚动条或命令控件上（这些位置不启动框选）。</summary>
+    private static bool IsInteractiveElement(DependencyObject? source)
+    {
+        for (var node = source; node is not null; node = VisualTreeHelper.GetParent(node))
+        {
+            if (node is ListViewItem or GridViewItem or ScrollBar or Thumb
+                or Button or CheckBox or HyperlinkButton or TextBox) return true;
+        }
+        return false;
+    }
+
+    private static ScrollViewer? FindScrollViewer(DependencyObject root)
+    {
+        if (root is ScrollViewer viewer) return viewer;
+        var count = VisualTreeHelper.GetChildrenCount(root);
+        for (var i = 0; i < count; i++)
+        {
+            var found = FindScrollViewer(VisualTreeHelper.GetChild(root, i));
+            if (found is not null) return found;
+        }
+        return null;
     }
 
     private void ItemContainer_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)

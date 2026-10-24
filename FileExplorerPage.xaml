@@ -145,7 +145,11 @@
         </Border>
 
         <!-- ===== 内容 ===== -->
-        <Grid Grid.Row="2" Margin="0,2,0,0">
+        <Grid
+            x:Name="ContentHost"
+            Grid.Row="2"
+            Margin="0,2,0,0"
+            Background="Transparent">
 
             <!-- 详细信息 -->
             <ListView
@@ -312,6 +316,20 @@
                     Style="{StaticResource CaptionTextBlockStyle}"
                     Text="没有与搜索匹配的项目" />
             </StackPanel>
+
+            <!-- 框选提示框：左键在空白处拖拽时显示，不参与命中测试 -->
+            <Canvas
+                x:Name="MarqueeCanvas"
+                IsHitTestVisible="False"
+                Visibility="Collapsed">
+                <Rectangle
+                    x:Name="MarqueeRect"
+                    Fill="#2E4CC2FF"
+                    RadiusX="2"
+                    RadiusY="2"
+                    Stroke="#CC4CC2FF"
+                    StrokeThickness="1" />
+            </Canvas>
         </Grid>
         </Grid>
     </Border>
