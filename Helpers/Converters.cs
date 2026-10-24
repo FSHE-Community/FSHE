@@ -1,7 +1,8 @@
+using FSHE.Models;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media;
 
-namespace FSHE;
+namespace FSHE.Helpers;
 
 /// <summary>按文件扩展名返回图标前景色；文件夹→黄色，图片→绿，音频→紫，视频→红，压缩→橙，可执行→蓝，文档→白，其余→次级灰。</summary>
 public sealed class FolderIconBrushConverter : IValueConverter

@@ -52,15 +52,15 @@ dotnet run
 
 ### 打包安装程序
 
-仓库根目录提供一键脚本（自动 publish、补齐 WinUI 运行时资源、同步到 `installer_src`、调用 Inno Setup 编译）：
+仓库内 `installer\` 目录提供一键脚本（自动 publish、补齐 WinUI 运行时资源、同步到 `installer_src`、调用 Inno Setup 编译）：
 
 ```powershell
-.\publish-installer.ps1
+.\installer\publish-installer.ps1
 ```
 
 - 需安装 [Inno Setup 6](https://jrsoftware.org/isinfo.php)。脚本会依次在 `E:\Inno\Inno Setup 6\`、Program Files、注册表中查找 `ISCC.exe`，也可用 `-IsccPath` 手动指定
 - 产物：`installer_output\FSHE-Setup-<版本>.exe`
-- 只准备发布文件、不编译安装包：`.\publish-installer.ps1 -SkipInstaller`
+- 只准备发布文件、不编译安装包：`.\installer\publish-installer.ps1 -SkipInstaller`
 
 > 注意：非打包模式下，`dotnet publish` 默认不会带上 `*.xbf` 与 `FSHE.pri`，缺了会导致应用启动即崩溃。`FSHE.csproj` 里的 `CopyWinUIResourcesToPublish` 目标已自动处理，无需手动拷贝。
 
@@ -68,12 +68,18 @@ dotnet run
 
 ```
 FSHE/
-├── MainWindow.xaml / .cs       # 主窗口（标题栏、标签页、侧边栏、命令栏）
-├── FileExplorerPage.xaml / .cs # 文件列表页面（搜索、排序、视图、选中）
-├── FileSystemItem.cs           # 文件/文件夹模型 + ShellIconHelper (P/Invoke)
-├── TabItem.cs                  # 标签页视图模型
-├── Converters.cs               # 值转换器
-├── Styles/DesignTokens.xaml   # 配色常量
+├── App.xaml / .cs              # 应用入口、全局资源
+├── Views/
+│   ├── MainWindow.xaml / .cs       # 主窗口（标题栏、标签页、侧边栏、命令栏）
+│   ├── FileExplorerPage.xaml / .cs # 文件列表页面（搜索、排序、视图、选中、框选）
+│   └── HomePage.xaml / .cs         # 主页（驱动器概览）
+├── Models/
+│   ├── FileSystemItem.cs           # 文件/文件夹模型 + ShellIconHelper (P/Invoke)
+│   └── TabItem.cs                  # 标签页视图模型
+├── Helpers/Converters.cs       # 值转换器
+├── Styles/DesignTokens.xaml    # 配色常量
+├── installer/                  # FSHE-Setup.iss + publish-installer.ps1
+├── docs/                       # 设计与开发文档
 └── Assets/                     # 应用图标资源
 ```
 

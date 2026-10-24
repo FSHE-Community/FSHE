@@ -1,9 +1,10 @@
+using FSHE.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 
-namespace FSHE;
+namespace FSHE.Views;
 
 /// <summary>驱动器主页：展示本机所有就绪驱动器的容量卡片，单击进入。</summary>
 public sealed partial class HomePage : Page

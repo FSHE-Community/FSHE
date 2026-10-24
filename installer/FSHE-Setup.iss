@@ -5,7 +5,7 @@
 #define MyAppVersion "1.1.0"
 #define MyAppPublisher "YG-0"
 #define MyAppExeName "FSHE.exe"
-#define MyAppSourceDir "installer_src"
+#define MyAppSourceDir "..\installer_src"
 
 [Setup]
 AppId={{8F4C3D2A-1B5E-4D8F-A6C1-9D0E7F1A2B3C}
@@ -17,7 +17,7 @@ AppSupportURL=https://github.com/YG-0/FSHE/issues
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
-OutputDir=installer_output
+OutputDir=..\installer_output
 OutputBaseFilename=FSHE-Setup-{#MyAppVersion}
 Compression=lzma2
 SolidCompression=yes

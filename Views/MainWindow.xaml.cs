@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using FSHE.Models;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -15,7 +16,7 @@ using Windows.Foundation;
 using Windows.UI;
 using WinRT;
 
-namespace FSHE;
+namespace FSHE.Views;
 
 /// <summary>
 /// FSHE 主窗口：标签页、工具栏、命令栏、分区侧边栏、内容 Frame、悬浮状态栏。

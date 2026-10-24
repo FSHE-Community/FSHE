@@ -21,10 +21,10 @@
     只准备 installer_src，不编译安装包。
 
 .EXAMPLE
-    .\publish-installer.ps1
+    .\installer\publish-installer.ps1
 
 .EXAMPLE
-    .\publish-installer.ps1 -SkipInstaller
+    .\installer\publish-installer.ps1 -SkipInstaller
 #>
 [CmdletBinding()]
 param(
@@ -35,10 +35,10 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$repoRoot = $PSScriptRoot
+$repoRoot = Split-Path $PSScriptRoot -Parent
 $stagingDir = Join-Path $repoRoot 'artifacts\publish'
 $sourceDir = Join-Path $repoRoot 'installer_src'
-$issFile = Join-Path $repoRoot 'FSHE-Setup.iss'
+$issFile = Join-Path $PSScriptRoot 'FSHE-Setup.iss'
 
 function Write-Step([string]$text) {
     Write-Host ''
@@ -74,9 +74,9 @@ $required = @(
     'FSHE.dll',
     'FSHE.pri',
     'App.xbf',
-    'MainWindow.xbf',
-    'FileExplorerPage.xbf',
-    'HomePage.xbf',
+    'Views\MainWindow.xbf',
+    'Views\FileExplorerPage.xbf',
+    'Views\HomePage.xbf',
     'Styles\DesignTokens.xbf',
     'Assets\AppIcon.ico'
 )

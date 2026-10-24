@@ -1,4 +1,4 @@
-namespace FSHE;
+namespace FSHE.Models;
 
 /// <summary>
 /// 顶部标签页数据模型。

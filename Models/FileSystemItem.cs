@@ -8,7 +8,7 @@ using System.Text.Json;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 
-namespace FSHE;
+namespace FSHE.Models;
 
 /// <summary>Shell32 SHGetFileInfo P/Invoke — 提取 Windows 系统真实文件图标。</summary>
 internal static class ShellIconHelper

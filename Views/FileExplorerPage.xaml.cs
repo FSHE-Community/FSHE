@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Net.NetworkInformation;
+using FSHE.Models;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -14,7 +15,7 @@ using Microsoft.VisualBasic.FileIO;
 using Windows.Foundation;
 using Windows.System;
 
-namespace FSHE;
+namespace FSHE.Views;
 
 /// <summary>
 /// 文件列表页面：复选框多选项、三种视图、排序、文件操作（新建/复制/剪切/粘贴/重命名/回收站删除）。
