@@ -37,7 +37,6 @@
 .EXAMPLE
     .\install.ps1 -Uninstall
 #>
-[CmdletBinding()]
 param(
     [string]$Version = 'latest',
     [switch]$Force,
