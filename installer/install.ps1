@@ -83,15 +83,21 @@ function Get-FsheRegistration {
 }
 
 function Get-Release([string]$version) {
-    if ($version -eq 'latest') {
-        $uri = "https://api.github.com/repos/$Repo/releases/latest"
-    }
-    else {
-        $tag = if ($version.StartsWith('v')) { $version } else { "v$version" }
-        $uri = "https://api.github.com/repos/$Repo/releases/tags/$tag"
-    }
     try {
-        return Invoke-RestMethod -Uri $uri -Headers $Headers
+        if ($version -eq 'latest') {
+            return Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers $Headers
+        }
+
+        # 仓库里的 tag 写法不统一（1.0.1 / V1.1.0），忽略前缀 v 再匹配
+        $wanted = $version -replace '^[vV]', ''
+        $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases?per_page=100" -Headers $Headers
+        $release = $releases |
+            Where-Object { ($_.tag_name -replace '^[vV]', '') -eq $wanted } |
+            Select-Object -First 1
+        if (-not $release) {
+            throw "找不到版本 $version 的 Release（可用 latest 安装最新版）。"
+        }
+        return $release
     }
     catch {
         throw "查询 GitHub Release 失败（$version）：$($_.Exception.Message)"
