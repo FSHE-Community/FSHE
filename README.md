@@ -32,7 +32,7 @@
 ### 命令行一键安装（推荐）
 
 ```powershell
-irm https://raw.githubusercontent.com/YG-O/FSHE/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/FSHE-Community/FSHE/main/install.ps1 | iex
 ```
 
 一条命令完成「查询最新正式版 → 下载 → 静默安装」：装到当前用户目录，**不弹 UAC、不需要管理员权限**，已安装同版本会自动跳过。走管道执行，不受 PowerShell 执行策略限制。
@@ -40,14 +40,14 @@ irm https://raw.githubusercontent.com/YG-O/FSHE/main/install.ps1 | iex
 需要更多控制时，先把脚本落到本地再运行：
 
 ```powershell
-iwr https://raw.githubusercontent.com/YG-O/FSHE/main/install.ps1 -OutFile install.ps1
+iwr https://raw.githubusercontent.com/FSHE-Community/FSHE/main/install.ps1 -OutFile install.ps1
 
 .\install.ps1                  # 安装最新正式版
-.\install.ps1 -Version 1.1.0   # 安装指定版本
+.\install.ps1 -Version 1.1.1   # 安装指定版本
 .\install.ps1 -Force           # 已安装同版本时强制重装
 .\install.ps1 -DownloadOnly    # 只下载安装包，不安装
 .\install.ps1 -Uninstall       # 静默卸载
-.\install.ps1 -LocalInstaller .\FSHE-Setup-1.1.0.exe   # 装本地已有的安装包（离线）
+.\install.ps1 -LocalInstaller .\FSHE-Setup-1.1.1.exe   # 装本地已有的安装包（离线）
 ```
 
 > 从 GitHub 直连下载慢（国内常见）时可加镜像，脚本会用 Release 的 SHA256 校验安装包：
@@ -58,7 +58,7 @@ iwr https://raw.githubusercontent.com/YG-O/FSHE/main/install.ps1 -OutFile instal
 
 ### 图形安装包
 
-在 [Releases](https://github.com/YG-O/FSHE/releases) 下载 `FSHE-Setup-<版本>.exe` 双击安装：
+在 [Releases](https://github.com/FSHE-Community/FSHE/releases) 下载 `FSHE-Setup-<版本>.exe` 双击安装：
 
 - 静默安装参数：`/VERYSILENT /SUPPRESSMSGBOXES /NORESTART`
 - 默认安装到 `%LocalAppData%\Programs\FSHE`，可自行改路径

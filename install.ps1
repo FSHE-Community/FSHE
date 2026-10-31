@@ -1,7 +1,7 @@
 # FSHE installer bootstrap.
 #
 # This file is intentionally ASCII-only and has no UTF-8 BOM: when you run
-#    irm https://raw.githubusercontent.com/YG-O/FSHE/main/install.ps1 | iex
+#    irm https://raw.githubusercontent.com/FSHE-Community/FSHE/main/install.ps1 | iex
 # the text is fed straight into Invoke-Expression, and a BOM at the start
 # would break parsing on Windows PowerShell 5.1.
 #
@@ -10,8 +10,8 @@
 # forwards the arguments.
 #
 # Usage:
-#    irm https://raw.githubusercontent.com/YG-O/FSHE/main/install.ps1 | iex
-#    .\install.ps1 -Version 1.1.0
+#    irm https://raw.githubusercontent.com/FSHE-Community/FSHE/main/install.ps1 | iex
+#    .\install.ps1 -Version 1.1.1
 #    .\install.ps1 -Mirror https://ghfast.top
 #    .\install.ps1 -Uninstall
 
@@ -26,7 +26,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$coreUrl = 'https://raw.githubusercontent.com/YG-O/FSHE/main/installer/install.ps1'
+$coreUrl = 'https://raw.githubusercontent.com/FSHE-Community/FSHE/main/installer/install.ps1'
 $source = Invoke-RestMethod -Uri $coreUrl
 $source = $source.TrimStart([char]0xFEFF)
 

@@ -26,10 +26,10 @@
     直接安装本地已有的安装包，跳过下载（离线安装 / 调试用）。
 
 .EXAMPLE
-    irm https://raw.githubusercontent.com/YG-O/FSHE/main/install.ps1 | iex
+    irm https://raw.githubusercontent.com/FSHE-Community/FSHE/main/install.ps1 | iex
 
 .EXAMPLE
-    .\install.ps1 -Version 1.1.0
+    .\install.ps1 -Version 1.1.1
 
 .EXAMPLE
     .\install.ps1 -Mirror https://ghfast.top
@@ -50,7 +50,7 @@ $ErrorActionPreference = 'Stop'
 # Windows PowerShell 5.1 的进度条会让 Invoke-WebRequest 慢好几倍
 $ProgressPreference = 'SilentlyContinue'
 
-$Repo = 'YG-O/FSHE'
+$Repo = 'FSHE-Community/FSHE'
 $AppKey = '{8F4C3D2A-1B5E-4D8F-A6C1-9D0E7F1A2B3C}_is1'
 $Headers = @{
     'User-Agent' = 'FSHE-Installer'
