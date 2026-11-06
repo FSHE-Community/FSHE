@@ -126,6 +126,13 @@
         </Setter>
     </Style>
 
+    <!-- ===== 侧边栏大号导航项（已固定分区） ===== -->
+    <Style x:Key="NavItemLargeStyle" TargetType="primitives:ToggleButton" BasedOn="{StaticResource NavItemStyle}">
+        <Setter Property="Height" Value="50" />
+        <Setter Property="FontSize" Value="24" />
+        <Setter Property="Padding" Value="60,0,12,0" />
+    </Style>
+
     <!-- ===== 标签页（ToggleButton） ===== -->
     <Style x:Key="TabItemStyle" TargetType="primitives:ToggleButton">
         <Setter Property="Height" Value="34" />

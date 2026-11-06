@@ -58,6 +58,7 @@ public sealed partial class MainWindow : Window
         BuildDrivesSection();
         BuildTagsSection();
         InitSectionChevrons();
+        ApplyPinnedNavIcons();
 
         // 启动时两个标签页：驱动器主页 + 桌面
         var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
@@ -576,6 +577,18 @@ public sealed partial class MainWindow : Window
             foreach (var child in panel.Children.OfType<ToggleButton>())
                 _navButtons.Add(child);
         }
+    }
+
+    /// <summary>为「已固定」分区加载资源管理器同款彩色系统图标。</summary>
+    private void ApplyPinnedNavIcons()
+    {
+        DesktopNavIcon.Source = ShellIconHelper.GetShellResourceIcon(ShellIconHelper.ShellResourceIcon.Desktop);
+        DownloadsNavIcon.Source = ShellIconHelper.GetShellResourceIcon(ShellIconHelper.ShellResourceIcon.Downloads);
+        DocumentsNavIcon.Source = ShellIconHelper.GetShellResourceIcon(ShellIconHelper.ShellResourceIcon.Documents);
+        PicturesNavIcon.Source = ShellIconHelper.GetShellResourceIcon(ShellIconHelper.ShellResourceIcon.Pictures);
+        MusicNavIcon.Source = ShellIconHelper.GetShellResourceIcon(ShellIconHelper.ShellResourceIcon.Music);
+        VideosNavIcon.Source = ShellIconHelper.GetShellResourceIcon(ShellIconHelper.ShellResourceIcon.Videos);
+        RecycleBinNavIcon.Source = ShellIconHelper.GetShellResourceIcon(ShellIconHelper.ShellResourceIcon.RecycleBin);
     }
 
     private void BuildDrivesSection()

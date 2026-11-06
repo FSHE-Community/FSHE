@@ -42,6 +42,32 @@ internal static class ShellIconHelper
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool DestroyIcon(IntPtr hIcon);
 
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hFile, uint dwFlags);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool FreeLibrary(IntPtr hModule);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr LoadImage(IntPtr hinst, IntPtr name, uint type, int cx, int cy, uint fuLoad);
+
+    private const uint LOAD_LIBRARY_AS_DATAFILE = 0x2;
+    private const uint IMAGE_ICON = 1;
+
+    /// <summary>资源管理器侧边栏使用的系统图标（imageres.dll 资源 ID）。</summary>
+    public enum ShellResourceIcon
+    {
+        Desktop = 183,
+        Downloads = 184,
+        Documents = 112,
+        Pictures = 113,
+        Music = 108,
+        Videos = 189,
+        RecycleBin = 55,
+        RecycleBinFull = 54,
+    }
+
     private static readonly Dictionary<string, BitmapImage> _cache = new(StringComparer.OrdinalIgnoreCase);
 
     public static BitmapImage GetFolderIcon()
@@ -64,6 +90,41 @@ internal static class ShellIconHelper
         BitmapImage? img = null;
         if (hIcon != IntPtr.Zero && info.hIcon != IntPtr.Zero) img = ConvertAndFree(info.hIcon);
         img ??= GetFolderIcon();
+        _cache[key] = img;
+        return img;
+    }
+
+    /// <summary>按 imageres.dll 资源 ID 提取系统图标（与资源管理器侧边栏一致）。</summary>
+    public static BitmapImage GetShellResourceIcon(ShellResourceIcon icon, int size = 48)
+    {
+        var id = (int)icon;
+        var key = $"::RES:{id}:{size}";
+        if (_cache.TryGetValue(key, out var cached)) return cached;
+
+        BitmapImage? img = null;
+        try
+        {
+            var dll = Path.Combine(Environment.SystemDirectory, "imageres.dll");
+            var module = LoadLibraryEx(dll, IntPtr.Zero, LOAD_LIBRARY_AS_DATAFILE);
+            if (module != IntPtr.Zero)
+            {
+                try
+                {
+                    var hIcon = LoadImage(module, (IntPtr)id, IMAGE_ICON, size, size, 0);
+                    if (hIcon != IntPtr.Zero) img = ConvertAndFree(hIcon);
+                }
+                finally
+                {
+                    FreeLibrary(module);
+                }
+            }
+        }
+        catch
+        {
+            // 资源 DLL 不可用时退回通用文件夹图标
+        }
+
+        img ??= DefaultFileIcon();
         _cache[key] = img;
         return img;
     }
